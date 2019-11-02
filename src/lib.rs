@@ -11,6 +11,7 @@ pub use crate::{
 };
 
 mod engine;
+mod iterator;
 mod safe_rc;
 mod state;
 mod waker;
