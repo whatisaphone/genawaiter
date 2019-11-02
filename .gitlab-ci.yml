@@ -1,0 +1,20 @@
+fmt:
+  # Use a third-party repo since the official repo doesn't include tags.
+  # https://github.com/rust-lang-nursery/docker-rust-nightly/issues/3
+  image: instrumentisto/rust:nightly-2019-08-15
+  before_script:
+    - rustup component add rustfmt-preview
+  script:
+    - cargo fmt -- --check
+
+check:
+  image: rust:1.37
+  before_script:
+    - rustup component add clippy
+  script:
+    - cargo clippy --all-targets --features strict
+
+test:
+  image: rust:1.37
+  script:
+    - cargo test

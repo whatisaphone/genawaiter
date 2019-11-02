@@ -1,0 +1,19 @@
+# https://github.com/rust-lang/rustfmt/blob/master/Configurations.md
+
+edition = "2018"
+error_on_line_overflow = true
+error_on_unformatted = true
+force_multiline_blocks = true
+format_code_in_doc_comments = true
+format_macro_matchers = true
+format_strings = true
+imports_layout = "HorizontalVertical"
+max_width = 88
+merge_imports = true
+newline_style = "Unix"
+overflow_delimited_expr = true
+report_fixme = "Unnumbered"
+report_todo = "Unnumbered"
+use_field_init_shorthand = true
+version = "Two"
+wrap_comments = true

@@ -1,0 +1,10 @@
+[package]
+name = "genawaiter"
+version = "0.0.0"
+authors = ["John Simon <john@whatisaph.one>"]
+edition = "2018"
+
+[dependencies]
+
+[features]
+strict = []
