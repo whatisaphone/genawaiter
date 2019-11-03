@@ -36,8 +36,9 @@ mod tests {
             GeneratorState::Yielded(_) => panic!(),
             GeneratorState::Complete(co) => co,
         };
+        drop(gen);
         // As long as this is possible, this method of creating a generator is `unsafe`,
-        // because the `Co` points at dropped memory.
+        // because `co` points at dropped memory.
         let _ = co.yield_(10);
     }
 }

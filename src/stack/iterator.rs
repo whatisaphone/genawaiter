@@ -1,4 +1,4 @@
-use crate::{stack::generator::Gen, state::GeneratorState};
+use crate::{ops::GeneratorState, stack::generator::Gen};
 use std::{future::Future, pin::Pin, ptr};
 
 impl<'g, Y, F: Future<Output = ()>> IntoIterator for Pin<&'g mut Gen<Y, F>> {

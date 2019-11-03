@@ -1,10 +1,9 @@
 use crate::{
-    generator::Generator,
-    safe_rc::{
+    ops::{Generator, GeneratorState},
+    rc::{
         engine::{advance, Airlock},
         Co,
     },
-    GeneratorState,
 };
 use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 

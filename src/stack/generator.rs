@@ -1,6 +1,6 @@
 use crate::{
+    ops::{Generator, GeneratorState},
     stack::engine::{advance, Airlock, Co},
-    GeneratorState,
 };
 use std::{cell::UnsafeCell, future::Future, mem, pin::Pin, ptr};
 
@@ -50,5 +50,23 @@ impl<Y, F: Future> Drop for Gen<Y, F> {
             ptr::drop_in_place(&mut (*state).future);
             ptr::drop_in_place(&mut (*state).airlock);
         }
+    }
+}
+
+impl<Y, F: Future> Generator for Gen<Y, F> {
+    type Yield = Y;
+    type Return = F::Output;
+
+    fn resume(self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
+        let state: *mut State<Y, F> = &self.state as *const _ as *mut _;
+
+        let airlock;
+        let future;
+        unsafe {
+            airlock = &mut (*state).airlock;
+            future = Pin::new_unchecked(&mut (*state).future);
+        }
+
+        advance(future, airlock)
     }
 }

@@ -4,11 +4,9 @@
 // #![warn(clippy::cargo)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-pub use state::GeneratorState;
+pub use ops::GeneratorState;
 
-mod generator;
-mod iterator;
-pub mod safe_rc;
-mod stack;
-mod state;
+mod ops;
+pub mod rc;
+pub mod stack;
 mod waker;

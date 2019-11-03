@@ -1,4 +1,4 @@
-use crate::{safe_rc::Gen, state::GeneratorState};
+use crate::{ops::GeneratorState, rc::Gen};
 use std::future::Future;
 
 impl<Y, F: Future<Output = ()>> IntoIterator for Gen<Y, F> {
@@ -27,7 +27,7 @@ impl<Y, F: Future<Output = ()>> Iterator for IntoIter<Y, F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::safe_rc::{Co, Gen};
+    use crate::rc::{Co, Gen};
     use std::iter::IntoIterator;
 
     async fn produce(c: Co<i32>) {

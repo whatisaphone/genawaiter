@@ -8,7 +8,7 @@ mod iterator;
 #[cfg(test)]
 mod tests {
     use crate::{
-        safe_rc::{Co, Gen},
+        rc::{Co, Gen},
         GeneratorState,
     };
     use std::future::Future;
