@@ -36,7 +36,9 @@ mod tests {
         assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
     }
 
+    /// This test proves that `unsafe_generator` is actually unsafe.
     #[test]
+    #[ignore = "compile-only test"]
     fn unsafety() {
         async fn shenanigans(co: Co<'_, i32>) -> Co<'_, i32> {
             co
@@ -45,18 +47,16 @@ mod tests {
         fn co_escape() -> Co<'static, i32> {
             let mut gen = unsafe_generator!(shenanigans);
 
-            #[allow(clippy::let_and_return)]
-            let co = match gen.as_mut().resume() {
+            // Returning `co` from this function violates memory safety.
+            match gen.as_mut().resume() {
                 GeneratorState::Yielded(_) => panic!(),
                 GeneratorState::Complete(co) => co,
-            };
-
-            co
+            }
         }
 
-        // As long as this compiles, this method of creating a generator is `unsafe`,
-        // because `co` points at dropped memory.
         let co = co_escape();
+        // `co` points to data which was on the stack of `co_escape()` and has been
+        // dropped.
         let _ = co.yield_(10);
     }
 }
