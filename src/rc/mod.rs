@@ -5,6 +5,10 @@ mod engine;
 mod generator;
 mod iterator;
 
+#[cfg(feature = "nightly")]
+#[cfg(test)]
+mod nightly_tests;
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -33,16 +37,6 @@ mod tests {
         }
 
         let mut gen = Gen::new(|co| gen(5, co));
-        assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-        assert_eq!(gen.resume(), GeneratorState::Complete("done"));
-    }
-
-    #[test]
-    fn async_closure() {
-        let mut gen = Gen::new(async move |co| {
-            co.yield_(10).await;
-            "done"
-        });
         assert_eq!(gen.resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.resume(), GeneratorState::Complete("done"));
     }
