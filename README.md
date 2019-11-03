@@ -28,7 +28,7 @@ Result:
 9
 ```
 
-See the docs for more.
+[See the docs for more.](https://docs.rs/genawaiter)
 
 ## Development
 

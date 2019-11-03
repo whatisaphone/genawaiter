@@ -1,3 +1,5 @@
+# https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [package]
 name = "genawaiter"
 version = "0.1.0"
@@ -6,6 +8,7 @@ edition = "2018"
 license = "MIT"
 description = "Use generators on stable Rust."
 repository = "https://github.com/whatisaphone/genawaiter"
+documentation = "https://docs.rs/genawaiter"
 readme = "README-crates-io.md"
 keywords = ["generator", "yield", "coroutine", "async", "await"]
 categories = ["asynchronous", "concurrency", "rust-patterns"]
