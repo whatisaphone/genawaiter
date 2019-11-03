@@ -7,7 +7,7 @@ use std::{
     task::{Context, Poll},
 };
 
-type Airlock<Y> = Rc<RefCell<Option<Y>>>;
+pub type Airlock<Y> = Rc<RefCell<Option<Y>>>;
 
 pub fn advance<Y, R>(
     future: Pin<&mut impl Future<Output = R>>,

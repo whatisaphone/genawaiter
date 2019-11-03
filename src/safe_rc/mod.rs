@@ -1,29 +1,16 @@
-use crate::{engine::advance, Co, GeneratorState};
-use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
+pub use engine::Co;
+pub use generator::Gen;
 
-pub struct Generator<Y, F: Future> {
-    airlock: Rc<RefCell<Option<Y>>>,
-    future: Pin<Box<F>>,
-}
-
-impl<Y, F: Future> Generator<Y, F> {
-    pub fn new(start: impl FnOnce(Co<Y>) -> F) -> Self {
-        let airlock = Rc::new(RefCell::new(None));
-        let future = {
-            let airlock = airlock.clone();
-            Box::pin(start(Co { airlock }))
-        };
-        Self { airlock, future }
-    }
-
-    pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
-        advance(self.future.as_mut(), &self.airlock)
-    }
-}
+mod engine;
+mod generator;
+mod iterator;
 
 #[cfg(test)]
 mod tests {
-    use crate::{safe_rc::Generator, Co, GeneratorState};
+    use crate::{
+        safe_rc::{Co, Gen},
+        GeneratorState,
+    };
     use std::future::Future;
 
     async fn simple_producer(c: Co<i32>) -> &'static str {
@@ -33,7 +20,7 @@ mod tests {
 
     #[test]
     fn function() {
-        let mut gen = Generator::new(simple_producer);
+        let mut gen = Gen::new(simple_producer);
         assert_eq!(gen.resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.resume(), GeneratorState::Complete("done"));
     }
@@ -45,14 +32,14 @@ mod tests {
             "done"
         }
 
-        let mut gen = Generator::new(|co| gen(5, co));
+        let mut gen = Gen::new(|co| gen(5, co));
         assert_eq!(gen.resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.resume(), GeneratorState::Complete("done"));
     }
 
     #[test]
     fn async_closure() {
-        let mut gen = Generator::new(async move |co| {
+        let mut gen = Gen::new(async move |co| {
             co.yield_(10).await;
             "done"
         });
@@ -93,8 +80,8 @@ mod tests {
 
         fn create_generator(
             addrs: &mut Vec<*const i32>,
-        ) -> Generator<i32, impl Future<Output = &'static str> + '_> {
-            let mut gen = Generator::new(move |co| produce(addrs, co));
+        ) -> Gen<i32, impl Future<Output = &'static str> + '_> {
+            let mut gen = Gen::new(move |co| produce(addrs, co));
             assert_eq!(gen.resume(), GeneratorState::Yielded(10));
             gen
         }

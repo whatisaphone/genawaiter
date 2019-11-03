@@ -4,14 +4,11 @@
 // #![warn(clippy::cargo)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-pub use crate::{
-    engine::Co,
-    safe_rc::Generator as SafeRcGenerator,
-    state::GeneratorState,
-};
+pub use state::GeneratorState;
 
-mod engine;
+mod generator;
 mod iterator;
-mod safe_rc;
+pub mod safe_rc;
+mod stack;
 mod state;
 mod waker;
