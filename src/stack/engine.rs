@@ -48,7 +48,8 @@ impl<'y, Y> Future for Barrier<'y, Y> {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if unsafe { self.airlock.get().as_ref().unwrap() }.is_none() {
+        let airlock = unsafe { self.airlock.get().as_ref().unwrap() };
+        if airlock.is_none() {
             // If there is no value in the airlock, resume the generator so it produces
             // one.
             Poll::Ready(())

@@ -32,12 +32,13 @@ impl<Y, F: Future> Gen<Y, F> {
     }
 
     pub fn resume(self: Pin<&mut Self>) -> GeneratorState<Y, F::Output> {
-        let state: *mut State<Y, F> = &self.state as *const _ as *mut _;
+        let (future, airlock);
         unsafe {
-            let airlock = &mut (*state).airlock;
-            let future = self.map_unchecked_mut(|s| &mut s.state.future);
-            advance(future, airlock)
+            let state = &mut self.get_unchecked_mut().state;
+            future = Pin::new_unchecked(&mut state.future);
+            airlock = &state.airlock;
         }
+        advance(future, airlock)
     }
 }
 
@@ -56,15 +57,6 @@ impl<Y, F: Future> Generator for Gen<Y, F> {
     type Return = F::Output;
 
     fn resume(self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
-        let state: *mut State<Y, F> = &self.state as *const _ as *mut _;
-
-        let airlock;
-        let future;
-        unsafe {
-            airlock = &mut (*state).airlock;
-            future = Pin::new_unchecked(&mut (*state).future);
-        }
-
-        advance(future, airlock)
+        self.resume()
     }
 }
