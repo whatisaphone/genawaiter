@@ -69,8 +69,7 @@ This crate currently supplies two concrete implementations of the [`Generator`] 
 
 #![cfg_attr(feature = "nightly", feature(async_await, async_closure))]
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
-#![warn(missing_docs, clippy::pedantic)]
-// #![warn(clippy::cargo)]
+#![warn(missing_docs, clippy::cargo, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
 pub use ops::{Generator, GeneratorState};

@@ -3,6 +3,12 @@ name = "genawaiter"
 version = "0.0.0"
 authors = ["John Simon <john@whatisaph.one>"]
 edition = "2018"
+license = "MIT"
+description = "Use generators on stable Rust."
+repository = "https://github.com/whatisaphone/genawaiter"
+readme = "README-crates-io.md"
+keywords = ["generator", "yield", "coroutine", "async", "await"]
+categories = ["asynchronous", "concurrency", "rust-patterns"]
 
 [dependencies]
 
