@@ -4,16 +4,20 @@ use crate::{
 };
 use std::{cell::UnsafeCell, future::Future, mem, pin::Pin, ptr};
 
+/// This is a generator which stores all its state without any allocation.
+///
+/// _See the module-level docs for more details._
 pub struct Gen<Y, F: Future> {
     state: State<Y, F>,
 }
 
-pub struct State<Y, F: Future> {
+struct State<Y, F: Future> {
     airlock: Airlock<Y>,
     future: F,
 }
 
 impl<Y, F: Future> Gen<Y, F> {
+    #[doc(hidden)]
     pub unsafe fn __macro_internal_popuate<'y>(
         this: &mut mem::MaybeUninit<Self>,
         start: impl FnOnce(Co<'y, Y>) -> F,
@@ -31,14 +35,12 @@ impl<Y, F: Future> Gen<Y, F> {
         ptr::write(&mut (*p).future, future);
     }
 
+    /// Resumes execution of the generator.
+    ///
+    /// If the generator yields a value, `Yielded` is returned. Otherwise,
+    /// `Completed` is returned.
     pub fn resume(self: Pin<&mut Self>) -> GeneratorState<Y, F::Output> {
-        let (future, airlock);
-        unsafe {
-            let state = &mut self.get_unchecked_mut().state;
-            future = Pin::new_unchecked(&mut state.future);
-            airlock = &state.airlock;
-        }
-        advance(future, airlock)
+        Generator::resume(self)
     }
 }
 
@@ -57,6 +59,12 @@ impl<Y, F: Future> Generator for Gen<Y, F> {
     type Return = F::Output;
 
     fn resume(self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
-        self.resume()
+        let (future, airlock);
+        unsafe {
+            let state = &mut self.get_unchecked_mut().state;
+            future = Pin::new_unchecked(&mut state.future);
+            airlock = &state.airlock;
+        }
+        advance(future, airlock)
     }
 }

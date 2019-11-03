@@ -37,7 +37,7 @@ mod tests {
 
     #[test]
     fn into_iter() {
-        let gen = unsafe_generator!(produce);
+        unsafe_create_generator!(gen, produce);
         let items: Vec<_> = gen.into_iter().collect();
         assert_eq!(items, [10, 20]);
     }
@@ -45,7 +45,8 @@ mod tests {
     #[test]
     fn for_loop() {
         let mut sum = 0;
-        for x in unsafe_generator!(produce) {
+        unsafe_create_generator!(gen, produce);
+        for x in gen {
             sum += x;
         }
         assert_eq!(sum, 30);

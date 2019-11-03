@@ -7,6 +7,7 @@ use std::{
     task::{Context, Poll},
 };
 
+/// This type holds the value that is pending being returned from the generator.
 pub type Airlock<Y> = Rc<RefCell<Option<Y>>>;
 
 pub fn advance<Y, R>(
@@ -25,11 +26,23 @@ pub fn advance<Y, R>(
     }
 }
 
+/// This object lets you yield values from the generator by calling the `yield_`
+/// method.
+///
+/// "Co" can stand for either _controller_ or _coroutine_, depending on how
+/// theoretical you are feeling.
+///
+/// _See the module-level docs for more details._
 pub struct Co<Y> {
     pub(crate) airlock: Airlock<Y>,
 }
 
 impl<Y> Co<Y> {
+    /// Yields a value from the generator.
+    ///
+    /// The caller should immediately `await` the result of this function.
+    ///
+    /// _See the module-level docs for more details._
     pub fn yield_(&self, value: Y) -> impl Future<Output = ()> + '_ {
         *self.airlock.borrow_mut() = Some(value);
         Barrier {
@@ -38,7 +51,7 @@ impl<Y> Co<Y> {
     }
 }
 
-pub struct Barrier<'y, Y> {
+struct Barrier<'y, Y> {
     airlock: &'y Airlock<Y>,
 }
 
