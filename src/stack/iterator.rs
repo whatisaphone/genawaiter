@@ -1,5 +1,5 @@
 use crate::{ops::GeneratorState, stack::generator::Gen};
-use std::{future::Future, pin::Pin, ptr};
+use std::{future::Future, pin::Pin};
 
 impl<'g, Y, F: Future<Output = ()>> IntoIterator for Pin<&'g mut Gen<Y, F>> {
     type Item = Y;
@@ -18,8 +18,7 @@ impl<'g, Y, F: Future<Output = ()>> Iterator for IntoIter<'g, Y, F> {
     type Item = Y;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let generator = unsafe { ptr::read(&self.generator) };
-        match generator.__macro_internal_resume() {
+        match self.generator.as_mut().resume() {
             GeneratorState::Yielded(x) => Some(x),
             GeneratorState::Complete(()) => None,
         }

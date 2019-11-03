@@ -31,9 +31,7 @@ impl<Y, F: Future> Gen<Y, F> {
         ptr::write(&mut (*p).future, future);
     }
 
-    pub fn __macro_internal_resume(
-        self: Pin<&mut Self>,
-    ) -> GeneratorState<Y, F::Output> {
+    pub fn resume(self: Pin<&mut Self>) -> GeneratorState<Y, F::Output> {
         let state: *mut State<Y, F> = &self.state as *const _ as *mut _;
         unsafe {
             let airlock = &mut (*state).airlock;

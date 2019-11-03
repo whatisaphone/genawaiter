@@ -8,11 +8,3 @@ macro_rules! unsafe_generator {
         }
     }};
 }
-
-#[macro_export]
-macro_rules! resume {
-    ($generator:expr) => {{
-        let generator = unsafe { ::std::ptr::read(&$generator) };
-        generator.__macro_internal_resume()
-    }};
-}

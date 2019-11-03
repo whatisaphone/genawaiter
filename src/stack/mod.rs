@@ -19,10 +19,10 @@ mod tests {
 
     #[test]
     fn function() {
-        let gen = unsafe_generator!(simple_producer);
+        let mut gen = unsafe_generator!(simple_producer);
 
-        assert_eq!(resume!(gen), GeneratorState::Yielded(10));
-        assert_eq!(resume!(gen), GeneratorState::Complete("done"));
+        assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
+        assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
     }
 
     #[test]
@@ -31,14 +31,21 @@ mod tests {
             co
         }
 
-        let gen = unsafe_generator!(shenanigans);
-        let co = match resume!(gen) {
-            GeneratorState::Yielded(_) => panic!(),
-            GeneratorState::Complete(co) => co,
-        };
-        drop(gen);
-        // As long as this is possible, this method of creating a generator is `unsafe`,
+        fn co_escape() -> Co<'static, i32> {
+            let mut gen = unsafe_generator!(shenanigans);
+
+            #[allow(clippy::let_and_return)]
+            let co = match gen.as_mut().resume() {
+                GeneratorState::Yielded(_) => panic!(),
+                GeneratorState::Complete(co) => co,
+            };
+
+            co
+        }
+
+        // As long as this compiles, this method of creating a generator is `unsafe`,
         // because `co` points at dropped memory.
+        let co = co_escape();
         let _ = co.yield_(10);
     }
 }
