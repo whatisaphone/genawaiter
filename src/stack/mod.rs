@@ -20,7 +20,18 @@ mod tests {
     #[test]
     fn function() {
         let mut gen = unsafe_generator!(simple_producer);
+        assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
+        assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
+    }
 
+    #[test]
+    fn simple_closure() {
+        async fn gen(i: i32, co: Co<'_, i32>) -> &'static str {
+            co.yield_(i * 2).await;
+            "done"
+        }
+
+        let mut gen = unsafe_generator!(|co| gen(5, co));
         assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
     }
