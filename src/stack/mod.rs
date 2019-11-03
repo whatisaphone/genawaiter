@@ -36,8 +36,10 @@ Do not let the `Co` object escape the scope of the generator. Once the starting 
 returns `Poll::Ready`, the `Co` object should already have been dropped. If this
 invariant is not upheld, memory unsafety will result.
 
-Afaik, Rust's type system does not let you express the necessary lifetime bounds to
-guarantee safety, but I would love to be proven wrong!
+Afaik, Rust's type system [does not let you express][hrtb-thread] the necessary lifetime
+bounds to guarantee safety, but I would love to be proven wrong!
+
+[hrtb-thread]: https://users.rust-lang.org/t/hrtb-on-multiple-generics/34255
 
 # Examples
 
