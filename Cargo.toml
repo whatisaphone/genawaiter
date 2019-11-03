@@ -9,6 +9,7 @@ repository = "https://github.com/whatisaphone/genawaiter"
 readme = "README-crates-io.md"
 keywords = ["generator", "yield", "coroutine", "async", "await"]
 categories = ["asynchronous", "concurrency", "rust-patterns"]
+include = ["Cargo.toml", "README-crates-io.md", "src/**/*.rs"]
 
 [dependencies]
 
