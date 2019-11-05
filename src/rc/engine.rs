@@ -19,7 +19,18 @@ pub fn advance<Y, R>(
 
     match future.poll(&mut cx) {
         Poll::Pending => {
-            let value = airlock.borrow_mut().take().unwrap();
+            let value = airlock.borrow_mut().take();
+
+            #[cfg(debug_assertions)]
+            let value = value.expect(
+                "A generator was awaited without first yielding a value. Inside a \
+                 generator, do not await any futures other than the one returned by \
+                 `Co::yield_`.",
+            );
+
+            #[cfg(not(debug_assertions))]
+            let value = value.unwrap();
+
             GeneratorState::Yielded(value)
         }
         Poll::Ready(value) => GeneratorState::Complete(value),

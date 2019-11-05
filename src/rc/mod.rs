@@ -152,6 +152,7 @@ mod nightly_tests;
 mod tests {
     use crate::{
         rc::{Co, Gen},
+        testing::DummyFuture,
         GeneratorState,
     };
     use std::future::Future;
@@ -178,6 +179,17 @@ mod tests {
         let mut gen = Gen::new(|co| gen(5, co));
         assert_eq!(gen.resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.resume(), GeneratorState::Complete("done"));
+    }
+
+    #[test]
+    #[should_panic(expected = "Co::yield_")]
+    fn forbidden_await_helpful_message() {
+        async fn wrong(_: Co<i32>) {
+            DummyFuture.await;
+        }
+
+        let mut gen = Gen::new(wrong);
+        gen.resume();
     }
 
     /// This tests in a roundabout way that the `Gen` object can be moved. This

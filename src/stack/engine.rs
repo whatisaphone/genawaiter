@@ -27,7 +27,18 @@ pub fn advance<Y, R>(
         Poll::Pending => {
             // Safety: This follows the safety rules for `Airlock`.
             let value = unsafe { ptr::replace(airlock.get(), None) };
-            GeneratorState::Yielded(value.unwrap())
+
+            #[cfg(debug_assertions)]
+            let value = value.expect(
+                "A generator was awaited without first yielding a value. Inside a \
+                 generator, do not await any futures other than the one returned by \
+                 `Co::yield_`.",
+            );
+
+            #[cfg(not(debug_assertions))]
+            let value = value.unwrap();
+
+            GeneratorState::Yielded(value)
         }
         Poll::Ready(value) => GeneratorState::Complete(value),
     }

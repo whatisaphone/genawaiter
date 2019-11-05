@@ -77,4 +77,6 @@ pub use ops::{Generator, GeneratorState};
 mod ops;
 pub mod rc;
 pub mod stack;
+#[cfg(test)]
+mod testing;
 mod waker;

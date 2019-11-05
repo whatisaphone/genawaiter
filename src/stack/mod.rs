@@ -165,7 +165,7 @@ mod nightly_tests;
 
 #[cfg(test)]
 mod tests {
-    use crate::{stack::Co, GeneratorState};
+    use crate::{stack::Co, testing::DummyFuture, GeneratorState};
 
     async fn simple_producer(c: Co<'_, i32>) -> &'static str {
         c.yield_(10).await;
@@ -189,6 +189,17 @@ mod tests {
         unsafe_create_generator!(gen, |co| gen(5, co));
         assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
+    }
+
+    #[test]
+    #[should_panic(expected = "Co::yield_")]
+    fn forbidden_await_helpful_message() {
+        async fn wrong(_: Co<'_, i32>) {
+            DummyFuture.await;
+        }
+
+        unsafe_create_generator!(gen, wrong);
+        gen.resume();
     }
 
     /// This test proves that `unsafe_create_generator` is actually unsafe.
