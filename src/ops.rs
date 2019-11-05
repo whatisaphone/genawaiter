@@ -6,8 +6,10 @@ use std::pin::Pin;
 pub trait Generator {
     /// The type of value this generator yields.
     type Yield;
+
     /// The type of value this generator returns.
     type Return;
+
     /// Resumes the execution of this generator.
     fn resume(self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return>;
 }
@@ -21,6 +23,7 @@ pub trait Generator {
 pub enum GeneratorState<Y, R> {
     /// The generator suspended with a value.
     Yielded(Y),
+
     /// The generator completed with a return value.
     Complete(R),
 }

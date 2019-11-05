@@ -61,7 +61,9 @@ impl<Y, F: Future> Generator for Gen<Y, F> {
     fn resume(self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
         let (future, airlock);
         unsafe {
+            // Safety: Do not move out of the reference.
             let state = &mut self.get_unchecked_mut().state;
+            // Safety: Do not move out of the reference.
             future = Pin::new_unchecked(&mut state.future);
             airlock = &state.airlock;
         }

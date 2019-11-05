@@ -53,7 +53,7 @@ exhaust_generator(gen);
 macro_rules! unsafe_create_generator {
     ($name:ident, $start:expr) => {
         // Pull this into its own function so the lifetimes are not lost.
-        unsafe fn mu_get_mut<T>(mu: &mut ::std::mem::MaybeUninit<T>) -> &mut T {
+        unsafe fn mu_as_mut<T>(mu: &mut ::std::mem::MaybeUninit<T>) -> &mut T {
             mu.as_mut_ptr().as_mut().unwrap()
         }
 
@@ -61,7 +61,7 @@ macro_rules! unsafe_create_generator {
         #[allow(unused_mut)]
         let mut $name = unsafe {
             $crate::stack::Gen::__macro_internal_popuate(&mut generator_state, $start);
-            ::std::pin::Pin::new_unchecked(mu_get_mut(&mut generator_state))
+            ::std::pin::Pin::new_unchecked(mu_as_mut(&mut generator_state))
         };
     };
 }

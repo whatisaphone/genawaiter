@@ -180,14 +180,22 @@ mod tests {
         assert_eq!(gen.resume(), GeneratorState::Complete("done"));
     }
 
+    /// This tests in a roundabout way that the `Gen` object can be moved. This
+    /// should happen without moving the allocations inside so we don't
+    /// segfault.
     #[test]
-    fn pinned() {
+    fn gen_is_movable() {
         #[inline(never)]
         async fn produce(addrs: &mut Vec<*const i32>, co: Co<i32>) -> &'static str {
             use std::cell::Cell;
 
             let sentinel: Cell<i32> = Cell::new(0x8001);
+            // If the future state moved, this reference would become invalid, and
+            // hilarity would ensue.
             let sentinel_ref: &Cell<i32> = &sentinel;
+
+            // Test a few times that `sentinel` and `sentinel_ref` point to the same
+            // data.
 
             assert_eq!(sentinel.get(), 0x8001);
             sentinel_ref.set(0x8002);
@@ -211,6 +219,8 @@ mod tests {
             "done"
         }
 
+        /// Create a generator, resume it once (so `sentinel_ref` gets
+        /// initialized), and then move it out of the function.
         fn create_generator(
             addrs: &mut Vec<*const i32>,
         ) -> Gen<i32, impl Future<Output = &'static str> + '_> {

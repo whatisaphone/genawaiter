@@ -8,6 +8,12 @@ use std::{
 };
 
 /// This type holds the value that is pending being returned from the generator.
+///
+/// # Safety
+///
+/// This type is not `Sync` (so, single-thread), never exposed to user-land
+/// code, and never borrowed for longer than one statement, so all accesses are
+/// safe.
 pub type Airlock<Y> = UnsafeCell<Option<Y>>;
 
 pub fn advance<Y, R>(
@@ -19,6 +25,7 @@ pub fn advance<Y, R>(
 
     match future.poll(&mut cx) {
         Poll::Pending => {
+            // Safety: This follows the safety rules for `Airlock`.
             let value = unsafe { ptr::replace(airlock.get(), None) };
             GeneratorState::Yielded(value.unwrap())
         }
@@ -45,10 +52,11 @@ impl<'y, Y> Co<'y, Y> {
     /// _See the module-level docs for more details._
     pub fn yield_(&self, value: Y) -> impl Future<Output = ()> + '_ {
         unsafe {
+            // Safety: This follows the safety rules for `Airlock`.
             *self.airlock.get() = Some(value);
         }
         Barrier {
-            airlock: &self.airlock,
+            airlock: self.airlock,
         }
     }
 }
@@ -61,6 +69,7 @@ impl<'y, Y> Future for Barrier<'y, Y> {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        // Safety: This follows the safety rules for `Airlock`.
         let airlock = unsafe { self.airlock.get().as_ref().unwrap() };
         if airlock.is_none() {
             // If there is no value in the airlock, resume the generator so it produces
