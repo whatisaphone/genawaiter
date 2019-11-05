@@ -62,8 +62,18 @@ impl<'y, Y> Co<'y, Y> {
     ///
     /// _See the module-level docs for more details._
     pub fn yield_(&self, value: Y) -> impl Future<Output = ()> + '_ {
+        // Safety: This follows the safety rules for `Airlock`.
         unsafe {
-            // Safety: This follows the safety rules for `Airlock`.
+            #[cfg(debug_assertions)]
+            {
+                if (*self.airlock.get()).is_some() {
+                    panic!(
+                        "Multiple values were yielded without an intervening await. \
+                         Make sure to immediately await the result of `Co::yield_`."
+                    );
+                }
+            }
+
             *self.airlock.get() = Some(value);
         }
         Barrier {

@@ -192,6 +192,18 @@ mod tests {
         gen.resume();
     }
 
+    #[test]
+    #[should_panic(expected = "Co::yield_")]
+    fn multiple_yield_helpful_message() {
+        async fn wrong(co: Co<i32>) {
+            let _ = co.yield_(10);
+            let _ = co.yield_(20);
+        }
+
+        let mut gen = Gen::new(wrong);
+        gen.resume();
+    }
+
     /// This tests in a roundabout way that the `Gen` object can be moved. This
     /// should happen without moving the allocations inside so we don't
     /// segfault.

@@ -202,6 +202,18 @@ mod tests {
         gen.resume();
     }
 
+    #[test]
+    #[should_panic(expected = "Co::yield_")]
+    fn multiple_yield_helpful_message() {
+        async fn wrong(co: Co<'_, i32>) {
+            let _ = co.yield_(10);
+            let _ = co.yield_(20);
+        }
+
+        unsafe_create_generator!(gen, wrong);
+        gen.resume();
+    }
+
     /// This test proves that `unsafe_create_generator` is actually unsafe.
     #[test]
     #[ignore = "compile-only test"]

@@ -55,7 +55,19 @@ impl<Y> Co<Y> {
     ///
     /// _See the module-level docs for more details._
     pub fn yield_(&self, value: Y) -> impl Future<Output = ()> + '_ {
-        *self.airlock.borrow_mut() = Some(value);
+        let mut opened_airlock = self.airlock.borrow_mut();
+
+        #[cfg(debug_assertions)]
+        {
+            if opened_airlock.is_some() {
+                panic!(
+                    "Multiple values were yielded without an intervening await. Make \
+                     sure to immediately await the result of `Co::yield_`."
+                );
+            }
+        }
+
+        *opened_airlock = Some(value);
         Barrier {
             airlock: &self.airlock,
         }
