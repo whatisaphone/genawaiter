@@ -1,5 +1,8 @@
 # genawaiter
 
+[![crates.io](https://img.shields.io/crates/v/genawaiter.svg)](https://crates.io/crates/genawaiter)
+[![docs](https://docs.rs/genawaiter/badge.svg)](https://docs.rs/genawaiter)
+
 This crate implements stackless generators (aka coroutines) in stable Rust. Instead of using `yield`, which [won't be stabilized anytime soon][yield-unstable], you use `async`/`await`, which is stable today:
 
 [yield-unstable]: https://doc.rust-lang.org/nightly/unstable-book/language-features/generators.html
