@@ -40,7 +40,7 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     /// Resumes execution of the generator.
     ///
     /// The argument will become the output of the future returned from
-    /// [`Co::yield_`][rc::Co::yield].
+    /// [`Co::yield_`](struct.Co.html#method.yield_).
     ///
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.

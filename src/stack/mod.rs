@@ -3,11 +3,11 @@ This module implements a generator which is allocation-free.
 
 You can create a generator with the [`unsafe_create_generator!`] macro. This is safe as
 long as you don't do anything unusual with the `Co` object. (See below for the fint
-print.) If unsafety is not tolerable, use [`rc::Gen`] instead.
+print.) If unsafety is not tolerable, use [`rc::Gen`](../rc/struct.Gen.html) instead.
 
 Pass the macro a callable expression which accepts a `Co` object. Values can be yielded
-from the generator by calling [`Co::yield_`][`stack::Co::yield_`], and immediately
-awaiting the future it returns:
+from the generator by calling [`Co::yield_`](struct.Co.html#method.yield_), and
+immediately awaiting the future it returns:
 
 ```rust
 # use genawaiter::stack::Co;

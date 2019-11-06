@@ -1,11 +1,12 @@
 /*!
 This module implements a generator which stores its state on the heap.
 
-You can create a generator with [`Gen::new`][`rc::Gen::new`]. Pass it a function that
-bootstraps the generator.
+You can create a generator with [`Gen::new`](struct.Gen.html#method.new). Pass it a
+function that bootstraps the generator.
 
-Values can be yielded from the generator by calling [`Co::yield_`][`rc::Co::yield_`],
-and immediately awaiting the future it returns:
+Values can be yielded from the generator by calling
+[`Co::yield_`](struct.Co.html#method.yield_), and immediately awaiting the future it
+returns:
 
 ```rust
 # use genawaiter::rc::Co;

@@ -44,27 +44,26 @@ Result:
 
 # Backported stdlib types
 
-This crate supplies [`Generator`] and [`GeneratorState`]. They are copy/pasted from the
-stdlib (with stability attributes removed) so they can be used on stable Rust. If/when
-real generators are stabilized, hopefully they would be drop-in replacements.
+This crate supplies [`Generator`](trait.Generator.html) and
+[`GeneratorState`](enum.GeneratorState.html). They are copy/pasted from the stdlib (with
+stability attributes removed) so they can be used on stable Rust. If/when real
+generators are stabilized, hopefully they would be drop-in replacements.
 
-A Javscript developer might recognize this as a _polyfill_.
+Javscript developers might recognize this as a _polyfill_.
 
 # Choose your guarantees
 
-This crate currently supplies two concrete implementations of the [`Generator`] trait:
+This crate currently supplies two concrete implementations of the
+[`Generator`](trait.Generator.html) trait:
 
-1. [`genawaiter::rc`] – This uses 100% safe code, but requires allocation.
-2. [`genawaiter::stack`] – This works without allocating memory, but has a number of
-   downsides:
+1. [`genawaiter::rc`](rc) – This uses 100% safe code, but requires allocation.
+2. [`genawaiter::stack`](stack) – This works without allocating memory, but has a number
+   of downsides:
 
    - It uses a macro.
    - It uses unsafe code under the hood.
    - It is possible to violate memory safety (but only if you do silly things with the
      `co` object).
-
-[`genawaiter::rc`]: rc
-[`genawaiter::stack`]: stack
 */
 
 #![cfg_attr(feature = "nightly", feature(async_await, async_closure))]
