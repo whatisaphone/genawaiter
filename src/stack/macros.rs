@@ -52,7 +52,7 @@ consume_generator(gen);
 #[macro_export]
 macro_rules! unsafe_create_generator {
     ($name:ident, $start:expr) => {
-        let mut generator_state = $crate::stack::GenState::new();
+        let mut generator_state = $crate::stack::Shelf::new();
         #[allow(unused_mut)]
         let mut $name =
             unsafe { $crate::stack::Gen::new(&mut generator_state, $start) };

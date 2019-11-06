@@ -11,15 +11,15 @@ use std::{cell::UnsafeCell, future::Future, mem, pin::Pin, ptr};
 // Safety: The lifetime of the data is controlled by a `Gen`, which constructs
 // it in place, and holds a mutable reference right up until dropping it in
 // place.
-pub struct GenState<Y, R, F: Future>(mem::MaybeUninit<State<Y, R, F>>);
+pub struct Shelf<Y, R, F: Future>(mem::MaybeUninit<State<Y, R, F>>);
 
 struct State<Y, R, F: Future> {
     airlock: Airlock<Y, R>,
     future: F,
 }
 
-impl<Y, R, F: Future> GenState<Y, R, F> {
-    /// Creates a new, empty `GenState`.
+impl<Y, R, F: Future> Shelf<Y, R, F> {
+    /// Creates a new, empty `Shelf`.
     ///
     /// _See the module-level docs for examples._
     pub fn new() -> Self {
@@ -27,7 +27,7 @@ impl<Y, R, F: Future> GenState<Y, R, F> {
     }
 }
 
-impl<Y, R, F: Future> Default for GenState<Y, R, F> {
+impl<Y, R, F: Future> Default for Shelf<Y, R, F> {
     fn default() -> Self {
         Self::new()
     }
@@ -58,11 +58,11 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     ///
     /// _See the module-level docs for examples._
     pub unsafe fn new(
-        state: &'s mut GenState<Y, R, F>,
+        shelf: &'s mut Shelf<Y, R, F>,
         start: impl FnOnce(Co<'s, Y, R>) -> F,
     ) -> Self {
         // Safety: Build the struct in place, by assigning the fields in order.
-        let p = &mut *state.0.as_mut_ptr() as *mut State<Y, R, F>;
+        let p = &mut *shelf.0.as_mut_ptr() as *mut State<Y, R, F>;
 
         let airlock = UnsafeCell::new(Next::Empty);
         ptr::write(&mut (*p).airlock, airlock);
@@ -74,7 +74,7 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
 
         // Safety: the state can never be moved again, because we store it inside a
         // `Pin` until `Gen::drop`, where the contents are immediately dropped.
-        let state = Pin::new_unchecked(state.0.assume_init_get_mut());
+        let state = Pin::new_unchecked(shelf.0.assume_init_get_mut());
         Self { state }
     }
 

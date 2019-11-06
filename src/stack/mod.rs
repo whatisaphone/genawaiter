@@ -15,16 +15,17 @@ This is safe as long as you don't do anything silly with the `Co` object. (See b
 the fine print. If you cannot abide the `unsafe` keyword, use an [allocating
 generator](../rc) instead.)
 
-The macro is a shortcut for creating both a generator and its backing state. If you
-(or your IDE) dislike macros, you can also do the bookkeeping by hand:
+The macro is a shortcut for creating both a generator and its backing state (called a
+`Shelf`, to avoid confusion with the `GeneratorState` enum). If you (or your IDE)
+dislike macros, you can also do the bookkeeping by hand:
 
 ```rust
-# use genawaiter::stack::{Co, Gen, GenState};
+# use genawaiter::stack::{Co, Gen, Shelf};
 #
 # async fn producer(co: Co<'_, i32>) { /* ... */ }
 #
-let mut state = GenState::new();
-let gen = unsafe { Gen::new(&mut state, producer) };
+let mut shelf = Shelf::new();
+let gen = unsafe { Gen::new(&mut shelf, producer) };
 ```
 
 See the crate-level docs for a guide on how to use the generator after it's been
@@ -174,7 +175,7 @@ assert_eq!(gen.resume(), GeneratorState::Complete("done!"));
 */
 
 pub use engine::Co;
-pub use generator::{Gen, GenState};
+pub use generator::{Gen, Shelf};
 
 #[macro_use]
 mod macros;
