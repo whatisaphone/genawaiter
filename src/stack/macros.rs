@@ -9,9 +9,9 @@ unsafe_create_generator!(my_name, ...)
 let my_name = unsafe_create_generator!(...)
 ```
 
-The created variable has type `Pin<&mut Gen<Y, impl Future>>`. `Y` is the type yielded
-from the generator (`GeneratorState::Yielded`). `Future::Output` is the type returned
-from the generator (`GeneratorState::Complete`).
+The created variable has type `Pin<&mut Gen<Y, R, impl Future>>`. `Y` is the type
+yielded from the generator. `R` is the type of the resume argument. `Future::Output` is
+the type returned upon completion of the generator.
 
 The generator's state is stored on the stack of the current function. The state is
 pinned in place, so you cannot return it up the stack:
@@ -24,7 +24,7 @@ pinned in place, so you cannot return it up the stack:
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
 # }
 #
-fn create_generator() -> Pin<&'static mut Gen<i32, impl Future<Output = ()>>> {
+fn create_generator() -> Pin<&'static mut Gen<i32, (), impl Future>> {
     unsafe_create_generator!(gen, odd_numbers_less_than_ten);
     gen
 }
@@ -41,12 +41,12 @@ from its state:
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
 # }
 #
-fn exhaust_generator(gen: Pin<&mut Gen<i32, impl Future<Output = ()>>>) {
-    let _: Vec<_> = gen.into_iter().collect();
+fn consume_generator(gen: Pin<&mut Gen<i32, (), impl Future>>) {
+    gen.resume();
 }
 
 unsafe_create_generator!(gen, odd_numbers_less_than_ten);
-exhaust_generator(gen);
+consume_generator(gen);
 ```
 */
 #[macro_export]

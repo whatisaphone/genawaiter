@@ -2,6 +2,7 @@ use crate::{waker, GeneratorState};
 use std::{
     cell::UnsafeCell,
     future::Future,
+    mem,
     pin::Pin,
     ptr,
     task::{Context, Poll},
@@ -11,34 +12,48 @@ use std::{
 ///
 /// # Safety
 ///
-/// This type is not `Sync` (so, single-thread), never exposed to user-land
-/// code, and never borrowed for longer than one statement, so all accesses are
-/// safe.
-pub type Airlock<Y> = UnsafeCell<Option<Y>>;
+/// This type is `!Sync` (so, single-thread), never exposed to user-land code,
+/// and never borrowed across a function call, so safety can be verified locally
+/// at each use site.
+pub type Airlock<Y, R> = UnsafeCell<Next<Y, R>>;
 
-pub fn advance<Y, R>(
-    future: Pin<&mut impl Future<Output = R>>,
-    airlock: &Airlock<Y>,
-) -> GeneratorState<Y, R> {
+pub enum Next<Y, R> {
+    Empty,
+    Yield(Y),
+    Resume(R),
+}
+
+pub fn advance<Y, R, F: Future>(
+    future: Pin<&mut F>,
+    airlock: &Airlock<Y, R>,
+    resume_arg: R,
+) -> GeneratorState<Y, F::Output> {
+    unsafe {
+        ptr::replace(airlock.get(), Next::Resume(resume_arg));
+    }
+
     let waker = waker::create();
     let mut cx = Context::from_waker(&waker);
 
     match future.poll(&mut cx) {
         Poll::Pending => {
             // Safety: This follows the safety rules for `Airlock`.
-            let value = unsafe { ptr::replace(airlock.get(), None) };
+            let value = unsafe { ptr::replace(airlock.get(), Next::Empty) };
+            match value {
+                Next::Empty => unreachable!(),
+                Next::Yield(y) => GeneratorState::Yielded(y),
+                Next::Resume(_) => {
+                    #[cfg(debug_assertions)]
+                    panic!(
+                        "A generator was awaited without first yielding a value. \
+                         Inside a generator, do not await any futures other than the \
+                         one returned by `Co::yield_`.",
+                    );
 
-            #[cfg(debug_assertions)]
-            let value = value.expect(
-                "A generator was awaited without first yielding a value. Inside a \
-                 generator, do not await any futures other than the one returned by \
-                 `Co::yield_`.",
-            );
-
-            #[cfg(not(debug_assertions))]
-            let value = value.unwrap();
-
-            GeneratorState::Yielded(value)
+                    #[cfg(not(debug_assertions))]
+                    panic!("invalid await");
+                }
+            }
         }
         Poll::Ready(value) => GeneratorState::Complete(value),
     }
@@ -51,22 +66,22 @@ pub fn advance<Y, R>(
 /// theoretical you are feeling.
 ///
 /// _See the module-level docs for more details._
-pub struct Co<'y, Y> {
-    pub(crate) airlock: &'y Airlock<Y>,
+pub struct Co<'y, Y, R = ()> {
+    pub(crate) airlock: &'y Airlock<Y, R>,
 }
 
-impl<'y, Y> Co<'y, Y> {
+impl<'y, Y, R> Co<'y, Y, R> {
     /// Yields a value from the generator.
     ///
     /// The caller should immediately `await` the result of this function.
     ///
     /// _See the module-level docs for more details._
-    pub fn yield_(&self, value: Y) -> impl Future<Output = ()> + '_ {
+    pub fn yield_(&self, value: Y) -> impl Future<Output = R> + '_ {
         // Safety: This follows the safety rules for `Airlock`.
         unsafe {
             #[cfg(debug_assertions)]
             {
-                if (*self.airlock.get()).is_some() {
+                if let Next::Yield(_) = *self.airlock.get() {
                     panic!(
                         "Multiple values were yielded without an intervening await. \
                          Make sure to immediately await the result of `Co::yield_`."
@@ -74,7 +89,7 @@ impl<'y, Y> Co<'y, Y> {
                 }
             }
 
-            *self.airlock.get() = Some(value);
+            *self.airlock.get() = Next::Yield(value);
         }
         Barrier {
             airlock: self.airlock,
@@ -82,24 +97,27 @@ impl<'y, Y> Co<'y, Y> {
     }
 }
 
-struct Barrier<'y, Y> {
-    airlock: &'y Airlock<Y>,
+struct Barrier<'y, Y, R> {
+    airlock: &'y Airlock<Y, R>,
 }
 
-impl<'y, Y> Future for Barrier<'y, Y> {
-    type Output = ();
+impl<'y, Y, R> Future for Barrier<'y, Y, R> {
+    type Output = R;
 
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         // Safety: This follows the safety rules for `Airlock`.
-        let airlock = unsafe { self.airlock.get().as_ref().unwrap() };
-        if airlock.is_none() {
-            // If there is no value in the airlock, resume the generator so it produces
-            // one.
-            Poll::Ready(())
-        } else {
-            // If there is a value, pause the generator so we can yield the value to the
-            // caller.
-            Poll::Pending
+        let airlock = unsafe { self.airlock.get().as_mut().unwrap() };
+        match *airlock {
+            Next::Empty => unreachable!(),
+            Next::Yield(_) => Poll::Pending,
+            Next::Resume(_) => {
+                let value = mem::replace(airlock, Next::Empty);
+                match value {
+                    Next::Empty => unreachable!(),
+                    Next::Yield(_) => unreachable!(),
+                    Next::Resume(arg) => Poll::Ready(arg),
+                }
+            }
         }
     }
 }

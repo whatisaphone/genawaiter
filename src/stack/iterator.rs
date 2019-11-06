@@ -1,7 +1,7 @@
 use crate::{ops::GeneratorState, stack::generator::Gen};
 use std::{future::Future, pin::Pin};
 
-impl<'g, Y, F: Future<Output = ()>> IntoIterator for Pin<&'g mut Gen<Y, F>> {
+impl<'g, Y, F: Future<Output = ()>> IntoIterator for Pin<&'g mut Gen<Y, (), F>> {
     type Item = Y;
     type IntoIter = IntoIter<'g, Y, F>;
 
@@ -11,7 +11,7 @@ impl<'g, Y, F: Future<Output = ()>> IntoIterator for Pin<&'g mut Gen<Y, F>> {
 }
 
 pub struct IntoIter<'g, Y, F: Future<Output = ()>> {
-    generator: Pin<&'g mut Gen<Y, F>>,
+    generator: Pin<&'g mut Gen<Y, (), F>>,
 }
 
 impl<'g, Y, F: Future<Output = ()>> Iterator for IntoIter<'g, Y, F> {

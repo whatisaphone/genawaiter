@@ -166,6 +166,7 @@ mod nightly_tests;
 #[cfg(test)]
 mod tests {
     use crate::{stack::Co, testing::DummyFuture, GeneratorState};
+    use std::cell::RefCell;
 
     async fn simple_producer(c: Co<'_, i32>) -> &'static str {
         c.yield_(10).await;
@@ -189,6 +190,35 @@ mod tests {
         unsafe_create_generator!(gen, |co| gen(5, co));
         assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
+    }
+
+    #[test]
+    fn resume_args() {
+        async fn gen(resumes: &RefCell<Vec<&str>>, co: Co<'_, i32, &'static str>) {
+            let resume_arg = co.yield_(10).await;
+            resumes.borrow_mut().push(resume_arg);
+            let resume_arg = co.yield_(20).await;
+            resumes.borrow_mut().push(resume_arg);
+        }
+
+        let resumes = RefCell::new(Vec::new());
+        unsafe_create_generator!(gen, |co| gen(&resumes, co));
+        assert_eq!(*resumes.borrow(), &[] as &[&str]);
+
+        assert_eq!(
+            gen.as_mut().resume_with("ignored"),
+            GeneratorState::Yielded(10),
+        );
+        assert_eq!(*resumes.borrow(), &[] as &[&str]);
+
+        assert_eq!(gen.as_mut().resume_with("abc"), GeneratorState::Yielded(20));
+        assert_eq!(*resumes.borrow(), &["abc"]);
+
+        assert_eq!(
+            gen.as_mut().resume_with("def"),
+            GeneratorState::Complete(()),
+        );
+        assert_eq!(*resumes.borrow(), &["abc", "def"]);
     }
 
     #[test]
