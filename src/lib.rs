@@ -141,6 +141,7 @@ This crate supplies two concrete implementations of the
 
 pub use ops::{Coroutine, Generator, GeneratorState};
 
+mod ext;
 mod ops;
 pub mod rc;
 pub mod stack;

@@ -71,12 +71,12 @@ assert_eq!(xs, [1, 3, 5, 7, 9]);
 # }
 #
 unsafe_create_generator!(gen, odd_numbers_less_than_ten);
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(1));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(3));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(5));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(7));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(9));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Complete(()));
+assert_eq!(gen.resume(), GeneratorState::Yielded(1));
+assert_eq!(gen.resume(), GeneratorState::Yielded(3));
+assert_eq!(gen.resume(), GeneratorState::Yielded(5));
+assert_eq!(gen.resume(), GeneratorState::Yielded(7));
+assert_eq!(gen.resume(), GeneratorState::Yielded(9));
+assert_eq!(gen.resume(), GeneratorState::Complete(()));
 ```
 
 ## Using an async closure (nightly only)
@@ -88,9 +88,9 @@ unsafe_create_generator!(gen, async move |co| {
     co.yield_(10).await;
     co.yield_(20).await;
 });
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Complete(()));
+assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(), GeneratorState::Complete(()));
 ```
 
 ## Passing ordinary arguments
@@ -109,9 +109,9 @@ async fn multiples_of(num: i32, co: Co<'_, i32>) {
 }
 
 unsafe_create_generator!(gen, |co| multiples_of(10, co));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(30));
+assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(), GeneratorState::Yielded(30));
 ```
 
 ## Passing resume arguments
@@ -134,9 +134,9 @@ async fn check_numbers(co: Co<'_, (), i32>) {
 }
 
 unsafe_create_generator!(gen, check_numbers);
-gen.as_mut().resume_with(0);
-gen.as_mut().resume_with(1);
-gen.as_mut().resume_with(2);
+gen.resume_with(0);
+gen.resume_with(1);
+gen.resume_with(2);
 ```
 
 ## Returning a completion value
@@ -154,14 +154,14 @@ async fn numbers_then_string(co: Co<'_, i32>) -> &'static str {
 }
 
 unsafe_create_generator!(gen, numbers_then_string);
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done!"));
+assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(), GeneratorState::Complete("done!"));
 ```
 */
 
 pub use engine::Co;
-pub use generator::Gen;
+pub use generator::{Gen, GenState};
 
 #[macro_use]
 mod macros;
@@ -187,8 +187,8 @@ mod tests {
     #[test]
     fn function() {
         unsafe_create_generator!(gen, simple_producer);
-        assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
-        assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
+        assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+        assert_eq!(gen.resume(), GeneratorState::Complete("done"));
     }
 
     #[test]
@@ -199,8 +199,8 @@ mod tests {
         }
 
         unsafe_create_generator!(gen, |co| gen(5, co));
-        assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
-        assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
+        assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+        assert_eq!(gen.resume(), GeneratorState::Complete("done"));
     }
 
     #[test]
@@ -216,19 +216,13 @@ mod tests {
         unsafe_create_generator!(gen, |co| gen(&resumes, co));
         assert_eq!(*resumes.borrow(), &[] as &[&str]);
 
-        assert_eq!(
-            gen.as_mut().resume_with("ignored"),
-            GeneratorState::Yielded(10),
-        );
+        assert_eq!(gen.resume_with("ignored"), GeneratorState::Yielded(10));
         assert_eq!(*resumes.borrow(), &[] as &[&str]);
 
-        assert_eq!(gen.as_mut().resume_with("abc"), GeneratorState::Yielded(20));
+        assert_eq!(gen.resume_with("abc"), GeneratorState::Yielded(20));
         assert_eq!(*resumes.borrow(), &["abc"]);
 
-        assert_eq!(
-            gen.as_mut().resume_with("def"),
-            GeneratorState::Complete(()),
-        );
+        assert_eq!(gen.resume_with("def"), GeneratorState::Complete(()));
         assert_eq!(*resumes.borrow(), &["abc", "def"]);
     }
 
@@ -253,29 +247,5 @@ mod tests {
 
         unsafe_create_generator!(gen, wrong);
         gen.resume();
-    }
-
-    /// This test proves that `unsafe_create_generator` is actually unsafe.
-    #[test]
-    #[ignore = "compile-only test"]
-    fn unsafety() {
-        async fn shenanigans(co: Co<'_, i32>) -> Co<'_, i32> {
-            co
-        }
-
-        fn co_escape() -> Co<'static, i32> {
-            unsafe_create_generator!(gen, shenanigans);
-
-            // Returning `co` from this function violates memory safety.
-            match gen.as_mut().resume() {
-                GeneratorState::Yielded(_) => panic!(),
-                GeneratorState::Complete(co) => co,
-            }
-        }
-
-        let co = co_escape();
-        // `co` points to data which was on the stack of `co_escape()` and has been
-        // dropped.
-        let _ = co.yield_(10);
     }
 }

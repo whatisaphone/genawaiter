@@ -1,24 +1,24 @@
 use crate::{ops::GeneratorState, stack::generator::Gen};
-use std::{future::Future, pin::Pin};
+use std::future::Future;
 
-impl<'g, Y, F: Future<Output = ()>> IntoIterator for Pin<&'g mut Gen<Y, (), F>> {
+impl<'s, Y, F: Future<Output = ()>> IntoIterator for Gen<'s, Y, (), F> {
     type Item = Y;
-    type IntoIter = IntoIter<'g, Y, F>;
+    type IntoIter = IntoIter<'s, Y, F>;
 
     fn into_iter(self) -> Self::IntoIter {
         IntoIter { generator: self }
     }
 }
 
-pub struct IntoIter<'g, Y, F: Future<Output = ()>> {
-    generator: Pin<&'g mut Gen<Y, (), F>>,
+pub struct IntoIter<'s, Y, F: Future<Output = ()>> {
+    generator: Gen<'s, Y, (), F>,
 }
 
-impl<'g, Y, F: Future<Output = ()>> Iterator for IntoIter<'g, Y, F> {
+impl<'s, Y, F: Future<Output = ()>> Iterator for IntoIter<'s, Y, F> {
     type Item = Y;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.generator.as_mut().resume() {
+        match self.generator.resume() {
             GeneratorState::Yielded(x) => Some(x),
             GeneratorState::Complete(()) => None,
         }
