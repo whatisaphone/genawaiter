@@ -1,17 +1,30 @@
 /*!
-This module implements a generator which is allocation-free.
+This module implements a generator which doesn't require allocation.
 
-You can create a generator with the [`unsafe_create_generator!`] macro. This is safe as
-long as you don't do anything unusual with the `Co` object. (See below for the fine
-print. If you have zero tolerance for the `unsafe` keyword, use
-[`rc::Gen::new`](../rc/struct.Gen.html#method.new) instead.)
+You can create a generator with the [`unsafe_create_generator!`] macro:
 
 ```rust
 # use genawaiter::{stack::Co, unsafe_create_generator};
 #
 async fn producer(co: Co<'_, i32>) { /* ... */ }
 
-unsafe_create_generator!(generator, producer);
+unsafe_create_generator!(gen, producer);
+```
+
+This is safe as long as you don't do anything silly with the `Co` object. (See below for
+the fine print. If you cannot abide the `unsafe` keyword, use an [allocating
+generator](../rc) instead.)
+
+The macro is a shortcut for creating both a generator and its backing state. If you
+(or your IDE) dislike macros, you can also do the bookkeeping by hand:
+
+```rust
+# use genawaiter::stack::{Co, Gen, GenState};
+#
+# async fn producer(co: Co<'_, i32>) { /* ... */ }
+#
+let mut state = GenState::new();
+let gen = unsafe { Gen::new(&mut state, producer) };
 ```
 
 See the crate-level docs for a guide on how to use the generator after it's been

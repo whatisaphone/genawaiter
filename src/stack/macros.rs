@@ -9,9 +9,9 @@ unsafe_create_generator!(my_name, ...)
 let my_name = unsafe_create_generator!(...)
 ```
 
-The created variable has type `Pin<&mut Gen<Y, R, impl Future>>`. `Y` is the type
-yielded from the generator. `R` is the type of the resume argument. `Future::Output` is
-the type returned upon completion of the generator.
+The created variable has type `Gen<'_, Y, R, impl Future>`. `Y` is the type yielded from
+the generator. `R` is the type of the resume argument. `Future::Output` is the type
+returned upon completion of the generator.
 
 The generator's state is stored on the stack of the current function. The state is
 pinned in place, so it cannot escape the scope of the function:
