@@ -9,6 +9,6 @@ fn async_closure() {
         co.yield_(10).await;
         "done"
     });
-    assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(10));
-    assert_eq!(gen.as_mut().resume(), GeneratorState::Complete("done"));
+    assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+    assert_eq!(gen.resume(), GeneratorState::Complete("done"));
 }

@@ -25,7 +25,7 @@ pinned in place, so it cannot escape the scope of the function:
 #
 fn create_generator() -> impl Generator {
     unsafe_create_generator!(gen, odd_numbers_less_than_ten);
-    // error[E0515]: cannot return value referencing local variable `generator_state`
+    // error[E0597]: `generator_state` does not live long enough
     gen
 }
 ```
@@ -72,7 +72,7 @@ mod doctests {
         }
     }
 
-    fn create_generator() -> Pin<&'static mut impl Generator> {
+    fn create_generator() -> impl Generator {
         unsafe_create_generator!(gen, odd_numbers_less_than_ten);
         gen
     }
