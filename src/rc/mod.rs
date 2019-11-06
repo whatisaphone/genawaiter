@@ -73,7 +73,7 @@ assert_eq!(gen.resume(), GeneratorState::Complete(()));
 
 ## Using an async closure (nightly only)
 
-```compile_fail
+```ignore
 # use genawaiter::{rc::{Co, Gen}, GeneratorState};
 #
 let mut gen = Gen::new(async move |co| {

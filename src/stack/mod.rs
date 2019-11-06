@@ -95,7 +95,7 @@ assert_eq!(gen.resume(), GeneratorState::Complete(()));
 
 ## Using an async closure (nightly only)
 
-```compile_fail
+```ignore
 # use genawaiter::{stack::Co, unsafe_create_generator, GeneratorState};
 #
 unsafe_create_generator!(gen, async move |co| {
