@@ -1,7 +1,7 @@
 use crate::{
-    ops::{Generator, GeneratorState},
+    ops::{Coroutine, GeneratorState},
     rc::{
-        engine::{advance, Airlock},
+        engine::{advance, Airlock, Next},
         Co,
     },
 };
@@ -10,12 +10,12 @@ use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 /// This is a generator which stores its state on the heap.
 ///
 /// _See the module-level docs for more details._
-pub struct Gen<Y, F: Future> {
-    airlock: Airlock<Y>,
+pub struct Gen<Y, R, F: Future> {
+    airlock: Airlock<Y, R>,
     future: Pin<Box<F>>,
 }
 
-impl<Y, F: Future> Gen<Y, F> {
+impl<Y, R, F: Future> Gen<Y, R, F> {
     /// Creates a new generator from a function.
     ///
     /// The function accepts a [`Co`] object, and returns a future. Every time
@@ -28,8 +28,8 @@ impl<Y, F: Future> Gen<Y, F> {
     /// Typically this exchange will happen in the context of an `async fn`.
     ///
     /// _See the module-level docs for more details._
-    pub fn new(start: impl FnOnce(Co<Y>) -> F) -> Self {
-        let airlock = Rc::new(RefCell::new(None));
+    pub fn new(start: impl FnOnce(Co<Y, R>) -> F) -> Self {
+        let airlock = Rc::new(RefCell::new(Next::Empty));
         let future = {
             let airlock = airlock.clone();
             Box::pin(start(Co { airlock }))
@@ -39,19 +39,36 @@ impl<Y, F: Future> Gen<Y, F> {
 
     /// Resumes execution of the generator.
     ///
+    /// The argument will become the output of the future returned from
+    /// [`Co::yield_`][rc::Co::yield].
+    ///
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
-    pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
-        advance(self.future.as_mut(), &self.airlock)
+    pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
+        advance(self.future.as_mut(), &self.airlock, arg)
     }
 }
 
-impl<Y, F: Future> Generator for Gen<Y, F> {
+impl<Y, F: Future> Gen<Y, (), F> {
+    /// Resumes execution of the generator.
+    ///
+    /// If the generator yields a value, `Yielded` is returned. Otherwise,
+    /// `Completed` is returned.
+    pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
+        advance(self.future.as_mut(), &self.airlock, ())
+    }
+}
+
+impl<Y, R, F: Future> Coroutine for Gen<Y, R, F> {
     type Yield = Y;
+    type Resume = R;
     type Return = F::Output;
 
-    fn resume(mut self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
+    fn resume_with(
+        mut self: Pin<&mut Self>,
+        arg: R,
+    ) -> GeneratorState<Self::Yield, Self::Return> {
         let this: &mut Self = &mut *self;
-        advance(this.future.as_mut(), &this.airlock)
+        advance(this.future.as_mut(), &this.airlock, arg)
     }
 }

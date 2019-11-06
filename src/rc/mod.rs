@@ -155,7 +155,10 @@ mod tests {
         testing::DummyFuture,
         GeneratorState,
     };
-    use std::future::Future;
+    use std::{
+        cell::{Cell, RefCell},
+        future::Future,
+    };
 
     async fn simple_producer(c: Co<i32>) -> &'static str {
         c.yield_(10).await;
@@ -179,6 +182,29 @@ mod tests {
         let mut gen = Gen::new(|co| gen(5, co));
         assert_eq!(gen.resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.resume(), GeneratorState::Complete("done"));
+    }
+
+    #[test]
+    fn resume_args() {
+        async fn gen(resumes: &RefCell<Vec<&str>>, co: Co<i32, &'static str>) {
+            let resume_arg = co.yield_(10).await;
+            resumes.borrow_mut().push(resume_arg);
+            let resume_arg = co.yield_(20).await;
+            resumes.borrow_mut().push(resume_arg);
+        }
+
+        let resumes = RefCell::new(Vec::new());
+        let mut gen = Gen::new(|co| gen(&resumes, co));
+        assert_eq!(*resumes.borrow(), &[] as &[&str]);
+
+        assert_eq!(gen.resume_with("ignored"), GeneratorState::Yielded(10));
+        assert_eq!(*resumes.borrow(), &[] as &[&str]);
+
+        assert_eq!(gen.resume_with("abc"), GeneratorState::Yielded(20));
+        assert_eq!(*resumes.borrow(), &["abc"]);
+
+        assert_eq!(gen.resume_with("def"), GeneratorState::Complete(()));
+        assert_eq!(*resumes.borrow(), &["abc", "def"]);
     }
 
     #[test]
@@ -211,8 +237,6 @@ mod tests {
     fn gen_is_movable() {
         #[inline(never)]
         async fn produce(addrs: &mut Vec<*const i32>, co: Co<i32>) -> &'static str {
-            use std::cell::Cell;
-
             let sentinel: Cell<i32> = Cell::new(0x8001);
             // If the future state moved, this reference would become invalid, and
             // hilarity would ensue.
@@ -247,7 +271,7 @@ mod tests {
         /// initialized), and then move it out of the function.
         fn create_generator(
             addrs: &mut Vec<*const i32>,
-        ) -> Gen<i32, impl Future<Output = &'static str> + '_> {
+        ) -> Gen<i32, (), impl Future<Output = &'static str> + '_> {
             let mut gen = Gen::new(move |co| produce(addrs, co));
             assert_eq!(gen.resume(), GeneratorState::Yielded(10));
             gen
