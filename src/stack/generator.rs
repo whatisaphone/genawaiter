@@ -6,7 +6,7 @@ use std::{cell::UnsafeCell, future::Future, mem, pin::Pin, ptr};
 
 /// This is a generator which stores all its state without any allocation.
 ///
-/// _See the module-level docs for more details._
+/// _See the module-level docs for examples._
 pub struct Gen<Y, R, F: Future> {
     state: State<Y, R, F>,
 }
@@ -45,6 +45,8 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     ///
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
+    ///
+    /// _See the module-level docs for examples._
     pub fn resume_with(self: Pin<&mut Self>, arg: R) -> GeneratorState<Y, F::Output> {
         Coroutine::resume_with(self, arg)
     }
@@ -65,6 +67,8 @@ impl<Y, F: Future> Gen<Y, (), F> {
     ///
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
+    ///
+    /// _See the module-level docs for examples._
     pub fn resume(self: Pin<&mut Self>) -> GeneratorState<Y, F::Output> {
         Coroutine::resume_with(self, ())
     }

@@ -65,7 +65,7 @@ pub fn advance<Y, R, F: Future>(
 /// "Co" can stand for either _controller_ or _coroutine_, depending on how
 /// theoretical you are feeling.
 ///
-/// _See the module-level docs for more details._
+/// _See the module-level docs for examples._
 pub struct Co<'y, Y, R = ()> {
     pub(crate) airlock: &'y Airlock<Y, R>,
 }
@@ -75,7 +75,7 @@ impl<'y, Y, R> Co<'y, Y, R> {
     ///
     /// The caller should immediately `await` the result of this function.
     ///
-    /// _See the module-level docs for more details._
+    /// _See the module-level docs for examples._
     pub fn yield_(&self, value: Y) -> impl Future<Output = R> + '_ {
         // Safety: This follows the safety rules for `Airlock`.
         unsafe {

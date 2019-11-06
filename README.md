@@ -1,10 +1,10 @@
 # genawaiter
 
-This crate lets you use generators on stable Rust. Instead of using `yield`, which won't be stabilized anytime soon, you use `async`/`await`, which is stable today:
+This crate implements stackless generators (aka coroutines) in stable Rust. Instead of using `yield`, which [won't be stabilized anytime soon][yield-unstable], you use `async`/`await`, which is stable today:
+
+[yield-unstable]: https://doc.rust-lang.org/nightly/unstable-book/language-features/generators.html
 
 ```rust
-use genawaiter::rc::{Co, Gen};
-
 async fn odd_numbers_less_than_ten(co: Co<i32>) {
     let mut n = 1;
     while n < 10 {

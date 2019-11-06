@@ -9,7 +9,7 @@ use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 /// This is a generator which stores its state on the heap.
 ///
-/// _See the module-level docs for more details._
+/// _See the module-level docs for examples._
 pub struct Gen<Y, R, F: Future> {
     airlock: Airlock<Y, R>,
     future: Pin<Box<F>>,
@@ -27,7 +27,7 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     ///
     /// Typically this exchange will happen in the context of an `async fn`.
     ///
-    /// _See the module-level docs for more details._
+    /// _See the module-level docs for examples._
     pub fn new(start: impl FnOnce(Co<Y, R>) -> F) -> Self {
         let airlock = Rc::new(RefCell::new(Next::Empty));
         let future = {
@@ -44,6 +44,8 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     ///
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
+    ///
+    /// _See the module-level docs for examples._
     pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
         advance(self.future.as_mut(), &self.airlock, arg)
     }
@@ -54,6 +56,8 @@ impl<Y, F: Future> Gen<Y, (), F> {
     ///
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
+    ///
+    /// _See the module-level docs for examples._
     pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
         advance(self.future.as_mut(), &self.airlock, ())
     }

@@ -1,10 +1,22 @@
 use std::pin::Pin;
 
+/// A trait implemented for coroutines.
+///
+/// A `Coroutine` is a generalization of a `Generator`. A `Generator` constrains
+/// the resume argument type to `()`, but in a `Coroutine` it can be anything.
 pub trait Coroutine {
+    /// The type of value this generator yields.
     type Yield;
+
+    /// The type of value this generator accepts as a resume argument.
     type Resume;
+
+    /// The type of value this generator returns upon completion.
     type Return;
 
+    /// Resumes the execution of this generator.
+    ///
+    /// The argument will be passed into the coroutine as a resume argument.
     fn resume_with(
         self: Pin<&mut Self>,
         arg: Self::Resume,
@@ -18,7 +30,7 @@ pub trait Generator {
     /// The type of value this generator yields.
     type Yield;
 
-    /// The type of value this generator returns.
+    /// The type of value this generator returns upon completion.
     type Return;
 
     /// Resumes the execution of this generator.

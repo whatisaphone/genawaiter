@@ -9,37 +9,102 @@ common use cases are:
 Rust has this feature too, but it is currently unstable (and thus nightly-only). But
 with this crate, you can use them on stable Rust!
 
-# Example
+# A tale of three types
 
-Here is how it works in a nutshell:
+A generator can control the flow of up to three types of data:
+
+- **Yield** – Each time a generator suspends execution, it can produce a value.
+- **Resume** – Each time a generator is resumed, a value can be passed in.
+- **Completion** – When a generator completes, it can produce one final value.
+
+The three types are specified in the type signature of the generator. Only the first
+is required; the last two are optional:
 
 ```rust
-use genawaiter::rc::{Co, Gen};
+# use genawaiter::rc::Co;
+#
+type Yield = // ...
+#     ();
+type Resume = // ...
+#     ();
+type Completion = // ...
+#     ();
 
-async fn odd_numbers_less_than_ten(co: Co<i32>) {
-    let mut n = 1;
-    while n < 10 {
-        co.yield_(n).await;
-        n += 2;
+async fn generator(co: Co<Yield, Resume>) -> Completion { /* ... */ }
+```
+
+## Yielded values
+
+Values can be yielded from the generator by calling `yield_`, and immediately awaiting
+the future it returns. You can get these values out of the generator in either of two
+ways:
+
+- Call `resume()` or `resume_with()`. The values will be returned in a
+  `GeneratorState::Yielded`.
+
+  ```rust
+  # use genawaiter::{GeneratorState, rc::{Co, Gen}};
+  #
+  async fn give_me_a_ten(co: Co<i32>) {
+      co.yield_(10).await;
+  }
+
+  let mut generator = Gen::new(give_me_a_ten);
+  let ten = generator.resume();
+  assert_eq!(ten, GeneratorState::Yielded(10));
+  ```
+
+- Treat it as an iterator. For this to work, both the resume and completion types must
+  be `()` .
+
+  ```rust
+  # use genawaiter::rc::{Co, Gen};
+  #
+  async fn give_me_a_ten(co: Co<i32>) {
+      co.yield_(10).await;
+  }
+
+  let generator = Gen::new(give_me_a_ten);
+  let xs: Vec<_> = generator.into_iter().collect();
+  assert_eq!(xs, [10]);
+  ```
+
+## Resume arguments
+
+You can also send values back into the generator, by using `resume_with`. The generator
+receives them as the output of the future returned by `yield_`.
+
+```rust
+# use genawaiter::{GeneratorState, rc::{Co, Gen}};
+#
+async fn printer(co: Co<(), &'static str>) {
+    loop {
+        let text = co.yield_(()).await;
+        println!("{}", text);
     }
 }
 
-# let mut xs = Vec::new();
-for n in Gen::new(odd_numbers_less_than_ten) {
-    # xs.push(n);
-    println!("{}", n);
-}
-# assert_eq!(xs, [1, 3, 5, 7, 9]);
+let mut generator = Gen::new(printer);
+generator.resume_with("hello");
+generator.resume_with("world");
 ```
 
-Result:
+## Completion value
 
-```text
-1
-3
-5
-7
-9
+A generator can produce one final value upon completion, by returning it from the
+function. The consumer will receive this value as a `GeneratorState::Complete`.
+
+```rust
+# use genawaiter::{GeneratorState, rc::{Co, Gen}};
+#
+async fn foobar(co: Co<i32>) -> &'static str {
+    co.yield_(10).await;
+    "done"
+}
+
+let mut generator = Gen::new(foobar);
+assert_eq!(generator.resume(), GeneratorState::Yielded(10));
+assert_eq!(generator.resume(), GeneratorState::Complete("done"));
 ```
 
 # Backported stdlib types
@@ -47,14 +112,17 @@ Result:
 This crate supplies [`Generator`](trait.Generator.html) and
 [`GeneratorState`](enum.GeneratorState.html). They are copy/pasted from the stdlib (with
 stability attributes removed) so they can be used on stable Rust. If/when real
-generators are stabilized, hopefully they would be drop-in replacements.
+generators are stabilized, hopefully they would be drop-in replacements. Javscript
+developers might recognize this as a polyfill.
 
-Javscript developers might recognize this as a _polyfill_.
+There is also a [`Coroutine`](trait.Coroutine.html) trait, which does not come from the
+stdlib. A `Coroutine` is a generalization of a `Generator`. A `Generator` constrains the
+resume argument type to `()`, but in a `Coroutine` it can be anything.
 
 # Choose your guarantees
 
-This crate currently supplies two concrete implementations of the
-[`Generator`](trait.Generator.html) trait:
+This crate supplies two concrete implementations of the
+[`Coroutine`](trait.Coroutine.html) trait:
 
 1. [`genawaiter::rc`](rc) – This uses 100% safe code, but requires allocation.
 2. [`genawaiter::stack`](stack) – This works without allocating memory, but has a number
@@ -71,7 +139,7 @@ This crate currently supplies two concrete implementations of the
 #![warn(missing_docs, clippy::cargo, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-pub use ops::{Generator, GeneratorState};
+pub use ops::{Coroutine, Generator, GeneratorState};
 
 mod ops;
 pub mod rc;

@@ -2,33 +2,20 @@
 This module implements a generator which is allocation-free.
 
 You can create a generator with the [`unsafe_create_generator!`] macro. This is safe as
-long as you don't do anything unusual with the `Co` object. (See below for the fint
-print.) If unsafety is not tolerable, use [`rc::Gen`](../rc/struct.Gen.html) instead.
-
-Pass the macro a callable expression which accepts a `Co` object. Values can be yielded
-from the generator by calling [`Co::yield_`](struct.Co.html#method.yield_), and
-immediately awaiting the future it returns:
+long as you don't do anything unusual with the `Co` object. (See below for the fine
+print. If you have zero tolerance for the `unsafe` keyword, use
+[`rc::Gen::new`](../rc/struct.Gen.html#method.new) instead.)
 
 ```rust
-# use genawaiter::stack::Co;
+# use genawaiter::{stack::Co, unsafe_create_generator};
 #
-# async fn f(co: Co<'_, &str>) {
-co.yield_("value").await;
-# }
+async fn producer(co: Co<'_, i32>) { /* ... */ }
+
+unsafe_create_generator!(generator, producer);
 ```
 
-You can get values out of the generator in either of two ways:
-
-- Treat it as an iterator. In this case, the future's output must be `()`.
-- Call `resume()` until it completes. In this case, the future's output can be anything,
-  and it will be returned in the final `GeneratorState::Complete`.
-
-If you do not follow the `yield_().await` pattern above, behavior is memory-safe but
-otherwise left unspecified. Specifically, follow these guidelines to remain on the
-happy path:
-
-- Whenever calling `yield_()`, always immediately await its result.
-- Do not `await` any futures other than ones returned by `Co::yield_`.
+See the crate-level docs for a guide on how to use the generator after it's been
+created.
 
 # Safety
 
@@ -36,21 +23,19 @@ Do not let the `Co` object escape the scope of the generator. Once the starting 
 returns `Poll::Ready`, the `Co` object should already have been dropped. If this
 invariant is not upheld, memory unsafety will result.
 
-Afaik, Rust's type system [does not let you express][hrtb-thread] the necessary lifetime
-bounds to guarantee safety, but I would love to be proven wrong!
+Afaik, the Rust compiler [is not flexible enough][hrtb-thread] to let you express this
+invariant in the type system, but I would love to be proven wrong!
 
 [hrtb-thread]: https://users.rust-lang.org/t/hrtb-on-multiple-generics/34255
 
 # Examples
-
-(See the crate-level docs for the definition of `odd_numbers_less_than_ten`.)
 
 ## Using `Iterator`
 
 Generators implement `Iterator`, so you can use them in a for loop:
 
 ```rust
-# use genawaiter::{stack::{Co, Gen}, unsafe_create_generator, GeneratorState};
+# use genawaiter::{stack::Co, unsafe_create_generator, GeneratorState};
 #
 # async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
@@ -65,7 +50,7 @@ for n in gen {
 ## Collecting into a `Vec`
 
 ```rust
-# use genawaiter::{stack::{Co, Gen}, unsafe_create_generator, GeneratorState};
+# use genawaiter::{stack::Co, unsafe_create_generator, GeneratorState};
 #
 # async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
@@ -79,7 +64,7 @@ assert_eq!(xs, [1, 3, 5, 7, 9]);
 ## Using `resume()`
 
 ```rust
-# use genawaiter::{stack::{Co, Gen}, unsafe_create_generator, GeneratorState};
+# use genawaiter::{stack::Co, unsafe_create_generator, GeneratorState};
 #
 # async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
@@ -97,7 +82,7 @@ assert_eq!(gen.as_mut().resume(), GeneratorState::Complete(()));
 ## Using an async closure (nightly only)
 
 ```compile_fail
-# use genawaiter::{stack::{Co, Gen}, unsafe_create_generator, GeneratorState};
+# use genawaiter::{stack::Co, unsafe_create_generator, GeneratorState};
 #
 unsafe_create_generator!(gen, async move |co| {
     co.yield_(10).await;
@@ -108,12 +93,12 @@ assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(20));
 assert_eq!(gen.as_mut().resume(), GeneratorState::Complete(()));
 ```
 
-## Passing arguments
+## Passing ordinary arguments
 
 This is just ordinary Rust, nothing special.
 
 ```rust
-# use genawaiter::{stack::{Co, Gen}, unsafe_create_generator, GeneratorState};
+# use genawaiter::{stack::Co, unsafe_create_generator, GeneratorState};
 #
 async fn multiples_of(num: i32, co: Co<'_, i32>) {
     let mut cur = num;
@@ -129,12 +114,38 @@ assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(20));
 assert_eq!(gen.as_mut().resume(), GeneratorState::Yielded(30));
 ```
 
-## Returning a final value
+## Passing resume arguments
 
-You can return a final value with a different type than the values that are yielded.
+You can pass values into the generator.
+
+Note that the first resume argument will be lost. This is because at the time the first
+value is sent, there is no future being awaited inside the generator, so there is no
+place the value could go where the generator could observe it.
 
 ```rust
-# use genawaiter::{stack::{Co, Gen}, unsafe_create_generator, GeneratorState};
+# use genawaiter::{stack::Co, GeneratorState, unsafe_create_generator};
+#
+async fn check_numbers(co: Co<'_, (), i32>) {
+    let num = co.yield_(()).await;
+    assert_eq!(num, 1);
+
+    let num = co.yield_(()).await;
+    assert_eq!(num, 2);
+}
+
+unsafe_create_generator!(gen, check_numbers);
+gen.as_mut().resume_with(0);
+gen.as_mut().resume_with(1);
+gen.as_mut().resume_with(2);
+```
+
+## Returning a completion value
+
+You can return a completion value with a different type than the values that are
+yielded.
+
+```rust
+# use genawaiter::{stack::Co, unsafe_create_generator, GeneratorState};
 #
 async fn numbers_then_string(co: Co<'_, i32>) -> &'static str {
     co.yield_(10).await;

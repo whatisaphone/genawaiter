@@ -14,34 +14,35 @@ yielded from the generator. `R` is the type of the resume argument. `Future::Out
 the type returned upon completion of the generator.
 
 The generator's state is stored on the stack of the current function. The state is
-pinned in place, so you cannot return it up the stack:
+pinned in place, so it cannot escape the scope of the function:
 
 ```compile_fail
-# use genawaiter::{stack::{Co, Gen}, unsafe_create_generator};
-# use std::{future::Future, pin::Pin};
+# use genawaiter::{stack::Co, unsafe_create_generator, Generator};
+# use std::pin::Pin;
 #
 # async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
 # }
 #
-fn create_generator() -> Pin<&'static mut Gen<i32, (), impl Future>> {
+fn create_generator() -> Pin<&'static mut impl Generator<Yield = i32>> {
     unsafe_create_generator!(gen, odd_numbers_less_than_ten);
+    // error[E0515]: cannot return value referencing local variable `generator_state`
     gen
 }
 ```
 
-However, you _can_ pass it to other functions, because the pinned generator is distinct
-from its state:
+However, you _can_ pass the generator to other functions, because moving the generator
+does not move its state:
 
 ```
-# use genawaiter::{stack::{Co, Gen}, unsafe_create_generator};
-# use std::{future::Future, pin::Pin};
+# use genawaiter::{stack::Co, unsafe_create_generator, Generator};
+# use std::pin::Pin;
 #
 # async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
 # }
 #
-fn consume_generator(gen: Pin<&mut Gen<i32, (), impl Future>>) {
+fn consume_generator(gen: Pin<&mut impl Generator<Yield = i32>>) {
     gen.resume();
 }
 

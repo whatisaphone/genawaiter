@@ -2,38 +2,26 @@
 This module implements a generator which stores its state on the heap.
 
 You can create a generator with [`Gen::new`](struct.Gen.html#method.new). Pass it a
-function that bootstraps the generator.
-
-Values can be yielded from the generator by calling
-[`Co::yield_`](struct.Co.html#method.yield_), and immediately awaiting the future it
-returns:
+function that bootstraps the generator:
 
 ```rust
-# use genawaiter::rc::Co;
+# use genawaiter::rc::{Co, Gen};
 #
-# async fn f(co: Co<&str>) {
-co.yield_("value").await;
-# }
+async fn producer(co: Co<i32>) { /* ... */ }
+
+let mut generator = Gen::new(producer);
 ```
 
-You can get values out of the generator in either of two ways:
+See the crate-level docs for a guide on how to use the generator after it's been
+created.
 
-- Treat it as an iterator. In this case, the future's output must be `()`.
-- Call `resume()` until it completes. In this case, the future's output can be anything,
-  and it will be returned in the final `GeneratorState::Complete`.
+# Remarks
 
-These generators are memory-safe no matter what you do, but some operations are left
-unspecified. You can avoid unspecified behavior by not doing silly things. Here is a
-non-exhaustive list of silly things:
-
-- Whenever calling `yield_()`, always immediately await its result.
-- Do not `await` any futures other than ones returned by `Co::yield_`.
-- Do not let the `Co` object escape the scope of the generator. Once the starting future
-  returns `Poll::Ready`, the `Co` object should already have been dropped.
+Do not let the `Co` object escape the scope of the generator. Once the starting future
+returns `Poll::Ready`, the `Co` object should already have been dropped. If this
+invariant is not upheld, the result will be memory-safe but otherwise left unspecified.
 
 # Examples
-
-(See the crate-level docs for the definition of `odd_numbers_less_than_ten`.)
 
 ## Using `Iterator`
 
@@ -97,7 +85,7 @@ assert_eq!(gen.resume(), GeneratorState::Yielded(20));
 assert_eq!(gen.resume(), GeneratorState::Complete(()));
 ```
 
-## Passing arguments
+## Passing ordinary arguments
 
 This is just ordinary Rust, nothing special.
 
@@ -118,9 +106,35 @@ assert_eq!(gen.resume(), GeneratorState::Yielded(20));
 assert_eq!(gen.resume(), GeneratorState::Yielded(30));
 ```
 
-## Returning a final value
+## Passing resume arguments
 
-You can return a final value with a different type than the values that are yielded.
+You can pass values into the generator.
+
+Note that the first resume argument will be lost. This is because at the time the first
+value is sent, there is no future being awaited inside the generator, so there is no
+place the value could go where the generator could observe it.
+
+```rust
+# use genawaiter::{rc::{Co, Gen}, GeneratorState};
+#
+async fn check_numbers(co: Co<(), i32>) {
+    let num = co.yield_(()).await;
+    assert_eq!(num, 1);
+
+    let num = co.yield_(()).await;
+    assert_eq!(num, 2);
+}
+
+let mut gen = Gen::new(check_numbers);
+gen.resume_with(0);
+gen.resume_with(1);
+gen.resume_with(2);
+```
+
+## Returning a completion value
+
+You can return a completion value with a different type than the values that are
+yielded.
 
 ```rust
 # use genawaiter::{rc::{Co, Gen}, GeneratorState};
