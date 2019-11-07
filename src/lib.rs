@@ -69,6 +69,13 @@ ways:
   assert_eq!(xs, [10]);
   ```
 
+If you do not follow the `co.yield_().await` pattern above, behavior is memory-safe, but
+otherwise left unspecified. This crate tries to panic whenever the rules are broken, on
+a best-effort basis. To stay on the happy path, follow these rules:
+
+- Whenever calling `yield_`, always immediately await its result.
+- Do not await any futures other than the ones returned by `yield_`.
+
 ## Resume arguments
 
 You can also send values back into the generator, by using `resume_with`. The generator
