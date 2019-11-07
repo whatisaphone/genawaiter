@@ -47,7 +47,8 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     ///
     /// _See the module-level docs for examples._
     pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
-        advance(self.future.as_mut(), &self.airlock, arg)
+        *self.airlock.borrow_mut() = Next::Resume(arg);
+        advance(self.future.as_mut(), &self.airlock)
     }
 }
 
@@ -59,7 +60,7 @@ impl<Y, F: Future> Gen<Y, (), F> {
     ///
     /// _See the module-level docs for examples._
     pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
-        advance(self.future.as_mut(), &self.airlock, ())
+        self.resume_with(())
     }
 }
 
@@ -72,7 +73,6 @@ impl<Y, R, F: Future> Coroutine for Gen<Y, R, F> {
         mut self: Pin<&mut Self>,
         arg: R,
     ) -> GeneratorState<Self::Yield, Self::Return> {
-        let this: &mut Self = &mut *self;
-        advance(this.future.as_mut(), &this.airlock, arg)
+        Self::resume_with(&mut *self, arg)
     }
 }

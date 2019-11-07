@@ -20,10 +20,7 @@ pub enum Next<Y, R> {
 pub fn advance<Y, R, F: Future>(
     future: Pin<&mut F>,
     airlock: &Airlock<Y, R>,
-    resume_arg: R,
 ) -> GeneratorState<Y, F::Output> {
-    *airlock.borrow_mut() = Next::Resume(resume_arg);
-
     let waker = waker::create();
     let mut cx = Context::from_waker(&waker);
 

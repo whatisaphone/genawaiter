@@ -91,9 +91,13 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
         unsafe {
             // Safety: `future` is pinned, but never moved. `airlock` is never pinned.
             let state = self.state.as_mut().get_unchecked_mut();
+
+            // Safety: This follows the safety rules for `Airlock`.
+            ptr::replace(state.airlock.get(), Next::Resume(arg));
+
             let future = Pin::new_unchecked(&mut state.future);
             let airlock = &mut state.airlock;
-            advance(future, airlock, arg)
+            advance(future, airlock)
         }
     }
 }
