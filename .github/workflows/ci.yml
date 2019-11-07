@@ -1,0 +1,31 @@
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions
+
+name: CI
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.39.0
+          profile: minimal
+          components: clippy
+          override: true
+      - run: cargo clippy --all-targets --features strict
+      - run: cargo test
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2019-11-06
+          profile: minimal
+          components: rustfmt
+          override: true
+      - run: cargo fmt -- --check
+      - run: cargo test
