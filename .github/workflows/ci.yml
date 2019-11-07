@@ -4,7 +4,19 @@ name: CI
 on: push
 
 jobs:
-  build:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2019-11-06
+          profile: minimal
+          components: rustfmt
+          override: true
+      - run: cargo fmt -- --check
+
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -17,15 +29,16 @@ jobs:
       - run: cargo clippy --all-targets --features strict
       - run: cargo test
 
-  fmt:
+  test:
+    strategy:
+      matrix:
+        toolchain: [1.39.0, nightly-2019-11-06]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2019-11-06
+          toolchain: ${{ matrix.toolchain }}
           profile: minimal
-          components: rustfmt
           override: true
-      - run: cargo fmt -- --check
       - run: cargo test
