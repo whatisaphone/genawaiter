@@ -1,8 +1,11 @@
-# genawaiter
+# genawaiter [![crate-badge]][crate-link] [![docs-badge]][docs-link] [![ci-badge]][ci-link]
 
-[![crates.io](https://img.shields.io/crates/v/genawaiter.svg)](https://crates.io/crates/genawaiter)
-[![Docs](https://docs.rs/genawaiter/badge.svg)](https://docs.rs/genawaiter)
-[![CI](https://github.com/whatisaphone/genawaiter/workflows/CI/badge.svg)](https://github.com/whatisaphone/genawaiter/actions)
+[crate-badge]: https://img.shields.io/crates/v/genawaiter.svg
+[crate-link]: https://crates.io/crates/genawaiter
+[docs-badge]: https://docs.rs/genawaiter/badge.svg
+[docs-link]: https://docs.rs/genawaiter
+[ci-badge]: https://github.com/whatisaphone/genawaiter/workflows/CI/badge.svg
+[ci-link]: https://github.com/whatisaphone/genawaiter/actions
 
 This crate implements stackless generators (aka coroutines) in stable Rust. Instead of using `yield`, which [won't be stabilized anytime soon][yield-unstable], you use `async`/`await`, which is stable today:
 
