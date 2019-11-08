@@ -285,3 +285,32 @@ mod tests {
         let _ = escaped_co.yield_(10);
     }
 }
+
+#[allow(dead_code)]
+mod doctests {
+    /**
+    Make sure `co` cannot escape to the `'static` lifetime.
+
+    ```compile_fail
+    use genawaiter::{stack::Co, unsafe_create_generator};
+
+    async fn producer(co: Co<'static, i32>) {}
+
+    unsafe_create_generator!(gen, producer);
+    ```
+    */
+    fn co_is_not_static() {}
+
+    /**
+    This test is exactly the same as above, but doesn't trigger the failure.
+
+    ```
+    use genawaiter::{stack::Co, unsafe_create_generator};
+
+    async fn producer(co: Co<'_, i32>) {}
+
+    unsafe_create_generator!(gen, producer);
+    ```
+    */
+    fn co_is_not_static_baseline() {}
+}
