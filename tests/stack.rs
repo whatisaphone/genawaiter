@@ -3,7 +3,10 @@
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-use genawaiter::{stack::Co, unsafe_create_generator};
+use genawaiter::{
+    stack::{Co, Gen, Shelf},
+    unsafe_create_generator,
+};
 
 async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
     for n in (1..).step_by(2).take_while(|&n| n < 10) {
@@ -14,6 +17,14 @@ async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
 #[test]
 fn test_basic() {
     unsafe_create_generator!(gen, odd_numbers_less_than_ten);
+    let xs: Vec<_> = gen.into_iter().collect();
+    assert_eq!(xs, [1, 3, 5, 7, 9]);
+}
+
+#[test]
+fn test_shelf() {
+    let mut shelf = Shelf::new();
+    let gen = unsafe { Gen::new(&mut shelf, odd_numbers_less_than_ten) };
     let xs: Vec<_> = gen.into_iter().collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }
