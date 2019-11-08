@@ -64,16 +64,11 @@ mod doctests {
     /**
     ```compile_fail
     use genawaiter::{stack::Co, unsafe_create_generator, Generator};
-    use std::pin::Pin;
 
-    async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
-        for n in (1..).step_by(2).take_while(|&n| n < 10) {
-            co.yield_(n).await;
-        }
-    }
+    async fn producer(co: Co<'_, i32>) {}
 
     fn create_generator() -> impl Generator {
-        unsafe_create_generator!(gen, odd_numbers_less_than_ten);
+        unsafe_create_generator!(gen, producer);
         gen
     }
     ```
@@ -85,16 +80,11 @@ mod doctests {
 
     ```
     use genawaiter::{stack::Co, unsafe_create_generator, Generator};
-    use std::pin::Pin;
 
-    async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
-        for n in (1..).step_by(2).take_while(|&n| n < 10) {
-            co.yield_(n).await;
-        }
-    }
+    async fn producer(co: Co<'_, i32>) {}
 
     fn create_generator() {
-        unsafe_create_generator!(gen, odd_numbers_less_than_ten);
+        unsafe_create_generator!(gen, producer);
         // gen
     }
     ```
