@@ -71,12 +71,26 @@ assert_eq!(gen.resume(), GeneratorState::Yielded(9));
 assert_eq!(gen.resume(), GeneratorState::Complete(()));
 ```
 
-## Using an async closure (nightly only)
+## Using an async closure (nightly Rust only)
 
 ```ignore
 # use genawaiter::{rc::{Co, Gen}, GeneratorState};
 #
 let mut gen = Gen::new(async move |co| {
+    co.yield_(10).await;
+    co.yield_(20).await;
+});
+assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(), GeneratorState::Complete(()));
+```
+
+## Using an async <del>closure</del> faux·sure (works on stable Rust)
+
+```
+# use genawaiter::{rc::{Co, Gen}, GeneratorState};
+#
+let mut gen = Gen::new(|co| async move {
     co.yield_(10).await;
     co.yield_(20).await;
 });
