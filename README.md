@@ -12,16 +12,16 @@ This crate implements stackless generators (aka coroutines) in stable Rust. Inst
 [yield-unstable]: https://doc.rust-lang.org/nightly/unstable-book/language-features/generators.html
 
 ```rust
-async fn odd_numbers_less_than_ten(co: Co<i32>) {
+let generator = Gen::new(|co| async move {
     let mut n = 1;
     while n < 10 {
         co.yield_(n).await;
         n += 2;
     }
-}
+});
 
-for n in Gen::new(odd_numbers_less_than_ten) {
-    println!("{}", n);
+for num in generator {
+    println!("{}", num);
 }
 ```
 

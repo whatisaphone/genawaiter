@@ -21,7 +21,7 @@ The three types are specified in the type signature of the generator. Only the f
 is required; the last two are optional:
 
 ```rust
-# use genawaiter::rc::Co;
+# use genawaiter::rc::{Co, Gen};
 #
 type Yield = // ...
 #     ();
@@ -30,7 +30,33 @@ type Resume = // ...
 type Completion = // ...
 #     ();
 
-async fn generator(co: Co<Yield, Resume>) -> Completion { /* ... */ }
+async fn generator(co: Co<Yield, Resume>) -> Completion
+# {}
+# Gen::new(generator);
+```
+
+Rewritten as a non-`async` function, the above function has the same type as:
+
+```rust
+# use genawaiter::rc::{Co, Gen};
+# use std::{future::Future, pin::Pin, task::{Context, Poll}};
+#
+# type Yield = ();
+# type Resume = ();
+# type Completion = ();
+#
+fn generator(co: Co<Yield, Resume>) -> impl Future<Output = Completion>
+# {
+#     struct DummyFuture;
+#     impl Future for DummyFuture {
+#         type Output = ();
+#         fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+#             Poll::Pending
+#         }
+#     }
+#     DummyFuture
+# }
+# Gen::new(generator);
 ```
 
 ## Yielded values
@@ -43,13 +69,11 @@ ways:
   `GeneratorState::Yielded`.
 
   ```rust
-  # use genawaiter::{GeneratorState, rc::{Co, Gen}};
+  # use genawaiter::{GeneratorState, rc::Gen};
   #
-  async fn give_me_a_ten(co: Co<i32>) {
+  let mut generator = Gen::new(|co| async move {
       co.yield_(10).await;
-  }
-
-  let mut generator = Gen::new(give_me_a_ten);
+  });
   let ten = generator.resume();
   assert_eq!(ten, GeneratorState::Yielded(10));
   ```
@@ -58,13 +82,11 @@ ways:
   be `()` .
 
   ```rust
-  # use genawaiter::rc::{Co, Gen};
+  # use genawaiter::rc::Gen;
   #
-  async fn give_me_a_ten(co: Co<i32>) {
+  let generator = Gen::new(|co| async move {
       co.yield_(10).await;
-  }
-
-  let generator = Gen::new(give_me_a_ten);
+  });
   let xs: Vec<_> = generator.into_iter().collect();
   assert_eq!(xs, [10]);
   ```
@@ -79,21 +101,19 @@ a best-effort basis. To stay on the happy path, follow these rules:
 ## Resume arguments
 
 You can also send values back into the generator, by using `resume_with`. The generator
-receives them as the output of the future returned by `yield_`.
+receives them from the future returned by `yield_`.
 
 ```rust
-# use genawaiter::{GeneratorState, rc::{Co, Gen}};
+# use genawaiter::{GeneratorState, rc::Gen};
 #
-async fn printer(co: Co<(), &'static str>) {
+let mut printer = Gen::new(|co| async move {
     loop {
-        let text = co.yield_(()).await;
-        println!("{}", text);
+        let string = co.yield_(()).await;
+        println!("{}", string);
     }
-}
-
-let mut generator = Gen::new(printer);
-generator.resume_with("hello");
-generator.resume_with("world");
+});
+printer.resume_with("hello");
+printer.resume_with("world");
 ```
 
 ## Completion value
@@ -102,14 +122,12 @@ A generator can produce one final value upon completion, by returning it from th
 function. The consumer will receive this value as a `GeneratorState::Complete`.
 
 ```rust
-# use genawaiter::{GeneratorState, rc::{Co, Gen}};
+# use genawaiter::{GeneratorState, rc::Gen};
 #
-async fn foobar(co: Co<i32>) -> &'static str {
+let mut generator = Gen::new(|co| async move {
     co.yield_(10).await;
     "done"
-}
-
-let mut generator = Gen::new(foobar);
+});
 assert_eq!(generator.resume(), GeneratorState::Yielded(10));
 assert_eq!(generator.resume(), GeneratorState::Complete("done"));
 ```
