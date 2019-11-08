@@ -27,7 +27,6 @@ jobs:
           components: clippy
           override: true
       - run: cargo clippy --all-targets --features strict
-      - run: cargo test
 
   test:
     strategy:
