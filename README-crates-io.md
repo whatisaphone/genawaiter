@@ -7,9 +7,18 @@
 [ci-badge]: https://github.com/whatisaphone/genawaiter/workflows/CI/badge.svg
 [ci-link]: https://github.com/whatisaphone/genawaiter/actions
 
-This crate implements stackless generators (aka coroutines) in stable Rust. Instead of using `yield`, which [won't be stabilized anytime soon][yield-unstable], you use `async`/`await`, which is stable today:
+This crate implements stackless generators (aka coroutines) in stable Rust. Instead of using `yield`, which [won't be stabilized anytime soon][yield-unstable], you use `async`/`await`, which is stable today.
 
 [yield-unstable]: https://doc.rust-lang.org/nightly/unstable-book/language-features/generators.html
+
+Features:
+
+- safe
+- allocation-free
+- supports resume arguments
+- no dependencies
+
+Example:
 
 ```rust
 let generator = Gen::new(|co| async move {

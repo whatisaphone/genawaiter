@@ -7,10 +7,13 @@ use std::{cell::UnsafeCell, future::Future, mem, pin::Pin, ptr};
 
 /// This data structure holds the transient state of an executing generator.
 ///
+/// It's called "Shelf", rather than "State", to avoid confusion with the
+/// `GeneratorState` enum.
+///
 /// _See the module-level docs for examples._
 // Safety: The lifetime of the data is controlled by a `Gen`, which constructs
 // it in place, and holds a mutable reference right up until dropping it in
-// place.
+// place. Thus, the data inside is pinned and can never be moved.
 pub struct Shelf<Y, R, F: Future>(mem::MaybeUninit<State<Y, R, F>>);
 
 struct State<Y, R, F: Future> {
@@ -69,6 +72,17 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     /// proven wrong!
     ///
     /// [hrtb-thread]: https://users.rust-lang.org/t/hrtb-on-multiple-generics/34255
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use genawaiter::stack::{Co, Gen, Shelf};
+    /// #
+    /// # async fn producer(co: Co<'_, i32>) { /* ... */ }
+    /// #
+    /// let mut shelf = Shelf::new();
+    /// let gen = unsafe { Gen::new(&mut shelf, producer) };
+    /// ```
     pub unsafe fn new(
         shelf: &'s mut Shelf<Y, R, F>,
         start: impl FnOnce(Co<'s, Y, R>) -> F,

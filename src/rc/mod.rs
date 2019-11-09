@@ -12,9 +12,6 @@ async fn producer(co: Co<i32>) { /* ... */ }
 let mut generator = Gen::new(producer);
 ```
 
-See the crate-level docs for a guide on how to use the generator after it's been
-created.
-
 # Remarks
 
 Do not let the `Co` object escape the scope of the generator. Once the starting future
@@ -28,15 +25,22 @@ invariant is not upheld, the result will be memory-safe but otherwise left unspe
 Generators implement `Iterator`, so you can use them in a for loop:
 
 ```rust
-# use genawaiter::{rc::{Co, Gen}, GeneratorState};
-#
-# async fn odd_numbers_less_than_ten(co: Co<i32>) {
-#     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
-# }
-#
-for n in Gen::new(odd_numbers_less_than_ten) {
-    println!("{}", n);
+use genawaiter::rc::{Co, Gen};
+
+async fn odd_numbers_less_than_ten(co: Co<i32>) {
+    let mut n = 1;
+    while n < 10 {
+        co.yield_(n).await;
+        n += 2;
+    }
 }
+
+# let mut test = Vec::new();
+for num in Gen::new(odd_numbers_less_than_ten) {
+    println!("{}", num);
+    # test.push(num);
+}
+# assert_eq!(test, [1, 3, 5, 7, 9]);
 ```
 
 ## Collecting into a `Vec`

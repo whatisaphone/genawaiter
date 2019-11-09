@@ -15,21 +15,9 @@ This will create a variable named `my_generator` in the current scope, with type
 Gen<...>`.
 
 The macro is a shortcut for creating both a generator and its backing state (called a
-`Shelf`, to avoid confusion with the `GeneratorState` enum). If you (or your IDE)
-dislike macros, you can also do the bookkeeping by hand, though note that this requires
-you to opt in to `unsafe`ty:
-
-```rust
-# use genawaiter::stack::{Co, Gen, Shelf};
-#
-# async fn producer(co: Co<'_, i32>) { /* ... */ }
-#
-let mut shelf = Shelf::new();
-let gen = unsafe { Gen::new(&mut shelf, producer) };
-```
-
-See the crate-level docs for a guide on how to use the generator after it's been
-created.
+[`Shelf`](struct.Shelf.html)). If you (or your IDE) dislike macros, you can also do the
+bookkeeping by hand by using [`Gen::new`](struct.Gen.html#method.new), though note that
+this requires you to trade away safety.
 
 # Examples
 
@@ -38,16 +26,23 @@ created.
 Generators implement `Iterator`, so you can use them in a for loop:
 
 ```rust
-# use genawaiter::{generator_mut, stack::Co, GeneratorState};
-#
-# async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
-#     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
-# }
-#
-generator_mut!(gen, odd_numbers_less_than_ten);
-for n in gen {
-    println!("{}", n);
+use genawaiter::{generator_mut, stack::Co};
+
+async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
+    let mut n = 1;
+    while n < 10 {
+        co.yield_(n).await;
+        n += 2;
+    }
 }
+
+generator_mut!(gen, odd_numbers_less_than_ten);
+# let mut test = Vec::new();
+for num in gen {
+    println!("{}", num);
+    # test.push(num);
+}
+# assert_eq!(test, [1, 3, 5, 7, 9]);
 ```
 
 ## Collecting into a `Vec`
