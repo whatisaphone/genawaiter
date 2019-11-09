@@ -4,8 +4,8 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 
 use genawaiter::{
+    generator_mut,
     stack::{Co, Gen, Shelf},
-    unsafe_create_generator,
 };
 
 async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
@@ -16,7 +16,8 @@ async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
 
 #[test]
 fn test_basic() {
-    unsafe_create_generator!(gen, odd_numbers_less_than_ten);
+    generator_mut!(gen, odd_numbers_less_than_ten);
+
     let xs: Vec<_> = gen.into_iter().collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }
@@ -25,6 +26,7 @@ fn test_basic() {
 fn test_shelf() {
     let mut shelf = Shelf::new();
     let gen = unsafe { Gen::new(&mut shelf, odd_numbers_less_than_ten) };
+
     let xs: Vec<_> = gen.into_iter().collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }

@@ -9,6 +9,22 @@ common use cases are:
 Rust has this feature too, but it is currently unstable (and thus nightly-only). But
 with this crate, you can use them on stable Rust!
 
+# Choose your guarantees
+
+This crate supplies two concrete implementations of generators:
+
+1. [`genawaiter::stack`](stack) – You should prefer this implementation in almost all
+   cases.
+
+2. [`genawaiter::rc`](rc) – This one is slower and, per its name, requires allocation.
+   Its only advantages are (1) it doesn't use a macro, and (2) it only has
+   [one line of unsafe code][the-line] under the hood, which is trivially auditable.
+
+   [the-line]: https://github.com/whatisaphone/genawaiter/blob/414dc5c/src/waker.rs#L7
+
+Read on for more general info about how generators work, and how data flows in and out
+of a generator.
+
 # A tale of three types
 
 A generator can control the flow of up to three types of data:
@@ -143,20 +159,6 @@ developers might recognize this as a polyfill.
 There is also a [`Coroutine`](trait.Coroutine.html) trait, which does not come from the
 stdlib. A `Coroutine` is a generalization of a `Generator`. A `Generator` constrains the
 resume argument type to `()`, but in a `Coroutine` it can be anything.
-
-# Choose your guarantees
-
-This crate supplies two concrete implementations of the
-[`Coroutine`](trait.Coroutine.html) trait:
-
-1. [`genawaiter::rc`](rc) – This uses 100% safe code, but requires allocation.
-2. [`genawaiter::stack`](stack) – This works without allocating memory, but has a number
-   of downsides:
-
-   - It uses a macro.
-   - It uses unsafe code under the hood.
-   - It is possible to violate memory safety (but only if you do silly things with the
-     `co` object).
 */
 
 #![cfg_attr(feature = "nightly", feature(async_await, async_closure))]

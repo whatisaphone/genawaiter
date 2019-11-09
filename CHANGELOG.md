@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `generator_mut!`, a safe wrapper on top of `unsafe_create_generator!`.
+
 ## v0.2.0 – 2019-11-07
 
 ### Added

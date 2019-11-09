@@ -5,7 +5,7 @@ use crate::ops::GeneratorState;
 
 #[test]
 fn async_closure() {
-    unsafe_create_generator!(gen, async move |co| {
+    generator_mut!(gen, async move |co| {
         co.yield_(10).await;
         "done"
     });
