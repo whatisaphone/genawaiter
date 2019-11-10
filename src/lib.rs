@@ -168,6 +168,7 @@ resume argument type to `()`, but in a `Coroutine` it can be anything.
 
 pub use ops::{Coroutine, Generator, GeneratorState};
 
+mod core;
 mod ext;
 mod ops;
 pub mod rc;

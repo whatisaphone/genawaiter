@@ -1,11 +1,9 @@
 use crate::{
+    core::{advance, Airlock as _, Next},
     ops::{Coroutine, GeneratorState},
-    rc::{
-        engine::{advance, Airlock, Next},
-        Co,
-    },
+    rc::{engine::Airlock, Co},
 };
-use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
+use std::{future::Future, pin::Pin};
 
 /// This is a generator which stores its state on the heap.
 ///
@@ -29,11 +27,8 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     ///
     /// _See the module-level docs for examples._
     pub fn new(start: impl FnOnce(Co<Y, R>) -> F) -> Self {
-        let airlock = Rc::new(RefCell::new(Next::Empty));
-        let future = {
-            let airlock = airlock.clone();
-            Box::pin(start(Co { airlock }))
-        };
+        let airlock = Airlock::default();
+        let future = { Box::pin(start(Co::new(airlock.clone()))) };
         Self { airlock, future }
     }
 
@@ -47,7 +42,7 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     ///
     /// _See the module-level docs for examples._
     pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
-        *self.airlock.borrow_mut() = Next::Resume(arg);
+        self.airlock.replace(Next::Resume(arg));
         advance(self.future.as_mut(), &self.airlock)
     }
 }
