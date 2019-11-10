@@ -1,12 +1,5 @@
-use crate::{waker, GeneratorState};
-use std::{
-    cell::UnsafeCell,
-    future::Future,
-    mem,
-    pin::Pin,
-    ptr,
-    task::{Context, Poll},
-};
+use crate::{core, core::Next};
+use std::{cell::UnsafeCell, ptr};
 
 /// This type holds the value that is pending being returned from the generator.
 ///
@@ -15,42 +8,34 @@ use std::{
 /// This type is `!Sync` (so, single-thread), never exposed to user-land code,
 /// and never borrowed across a function call, so safety can be verified locally
 /// at each use site.
-pub type Airlock<Y, R> = UnsafeCell<Next<Y, R>>;
+pub struct Airlock<Y, R>(UnsafeCell<Next<Y, R>>);
 
-pub enum Next<Y, R> {
-    Empty,
-    Yield(Y),
-    Resume(R),
+impl<Y, R> Default for Airlock<Y, R> {
+    fn default() -> Self {
+        Self(UnsafeCell::new(Next::Empty))
+    }
 }
 
-pub fn advance<Y, R, F: Future>(
-    future: Pin<&mut F>,
-    airlock: &Airlock<Y, R>,
-) -> GeneratorState<Y, F::Output> {
-    let waker = waker::create();
-    let mut cx = Context::from_waker(&waker);
+impl<'s, Y, R> core::Airlock for &'s Airlock<Y, R> {
+    type Yield = Y;
+    type Resume = R;
 
-    match future.poll(&mut cx) {
-        Poll::Pending => {
-            // Safety: This follows the safety rules for `Airlock`.
-            let value = unsafe { ptr::replace(airlock.get(), Next::Empty) };
-            match value {
-                Next::Empty => unreachable!(),
-                Next::Yield(y) => GeneratorState::Yielded(y),
-                Next::Resume(_) => {
-                    #[cfg(debug_assertions)]
-                    panic!(
-                        "A generator was awaited without first yielding a value. \
-                         Inside a generator, do not await any futures other than the \
-                         one returned by `Co::yield_`.",
-                    );
-
-                    #[cfg(not(debug_assertions))]
-                    panic!("invalid await");
-                }
-            }
+    fn peek(&self) -> Next<(), ()> {
+        // Safety: This follows the safety rules above.
+        let inner = unsafe { &*self.0.get() };
+        match inner {
+            Next::Empty => Next::Empty,
+            Next::Yield(_) => Next::Yield(()),
+            Next::Resume(_) => Next::Resume(()),
         }
-        Poll::Ready(value) => GeneratorState::Complete(value),
+    }
+
+    fn replace(
+        &self,
+        next: Next<Self::Yield, Self::Resume>,
+    ) -> Next<Self::Yield, Self::Resume> {
+        // Safety: This follows the safety rules above.
+        unsafe { ptr::replace(self.0.get(), next) }
     }
 }
 
@@ -61,58 +46,4 @@ pub fn advance<Y, R, F: Future>(
 /// theoretical you are feeling.
 ///
 /// _See the module-level docs for examples._
-pub struct Co<'y, Y, R = ()> {
-    pub(crate) airlock: &'y Airlock<Y, R>,
-}
-
-impl<'y, Y, R> Co<'y, Y, R> {
-    /// Yields a value from the generator.
-    ///
-    /// The caller should immediately `await` the result of this function.
-    ///
-    /// _See the module-level docs for examples._
-    pub fn yield_(&self, value: Y) -> impl Future<Output = R> + '_ {
-        // Safety: This follows the safety rules for `Airlock`.
-        unsafe {
-            #[cfg(debug_assertions)]
-            {
-                if let Next::Yield(_) = *self.airlock.get() {
-                    panic!(
-                        "Multiple values were yielded without an intervening await. \
-                         Make sure to immediately await the result of `Co::yield_`."
-                    );
-                }
-            }
-
-            *self.airlock.get() = Next::Yield(value);
-        }
-        Barrier {
-            airlock: self.airlock,
-        }
-    }
-}
-
-struct Barrier<'y, Y, R> {
-    airlock: &'y Airlock<Y, R>,
-}
-
-impl<'y, Y, R> Future for Barrier<'y, Y, R> {
-    type Output = R;
-
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        // Safety: This follows the safety rules for `Airlock`.
-        let airlock = unsafe { self.airlock.get().as_mut().unwrap() };
-        match *airlock {
-            Next::Empty => unreachable!(),
-            Next::Yield(_) => Poll::Pending,
-            Next::Resume(_) => {
-                let value = mem::replace(airlock, Next::Empty);
-                match value {
-                    Next::Empty => unreachable!(),
-                    Next::Yield(_) => unreachable!(),
-                    Next::Resume(arg) => Poll::Ready(arg),
-                }
-            }
-        }
-    }
-}
+pub type Co<'y, Y, R = ()> = core::Co<&'y Airlock<Y, R>>;

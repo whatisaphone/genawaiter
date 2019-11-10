@@ -1,9 +1,10 @@
 use crate::{
+    core::{advance, Airlock as _, Next},
     ext::MaybeUninitExt,
     ops::{Coroutine, GeneratorState},
-    stack::engine::{advance, Airlock, Co, Next},
+    stack::engine::{Airlock, Co},
 };
-use std::{cell::UnsafeCell, future::Future, mem, pin::Pin, ptr};
+use std::{future::Future, mem, pin::Pin, ptr};
 
 /// This data structure holds the transient state of an executing generator.
 ///
@@ -90,12 +91,10 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
         // Safety: Build the struct in place, by assigning the fields in order.
         let p = &mut *shelf.0.as_mut_ptr() as *mut State<Y, R, F>;
 
-        let airlock = UnsafeCell::new(Next::Empty);
+        let airlock = Airlock::default();
         ptr::write(&mut (*p).airlock, airlock);
 
-        let future = start(Co {
-            airlock: &(*p).airlock,
-        });
+        let future = start(Co::new(&(*p).airlock));
         ptr::write(&mut (*p).future, future);
 
         // Safety: the state can never be moved again, because we store it inside a
@@ -118,12 +117,11 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
             // Safety: `future` is pinned, but never moved. `airlock` is never pinned.
             let state = self.state.as_mut().get_unchecked_mut();
 
-            // Safety: This follows the safety rules for `Airlock`.
-            ptr::replace(state.airlock.get(), Next::Resume(arg));
+            (&state.airlock).replace(Next::Resume(arg));
 
             let future = Pin::new_unchecked(&mut state.future);
-            let airlock = &mut state.airlock;
-            advance(future, airlock)
+            let airlock = &state.airlock;
+            advance(future, &airlock)
         }
     }
 }
