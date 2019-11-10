@@ -12,12 +12,6 @@ async fn producer(co: Co<i32>) { /* ... */ }
 let mut generator = Gen::new(producer);
 ```
 
-# Remarks
-
-Do not let the `Co` object escape the scope of the generator. Once the starting future
-returns `Poll::Ready`, the `Co` object should already have been dropped. If this
-invariant is not upheld, the result will be memory-safe but otherwise left unspecified.
-
 # Examples
 
 ## Using `Iterator`

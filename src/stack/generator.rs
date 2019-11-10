@@ -37,7 +37,7 @@ impl<Y, R, F: Future> Default for Shelf<Y, R, F> {
     }
 }
 
-/// This is a generator which stores all its state without any allocation.
+/// This is a generator which can be stack-allocated.
 ///
 /// _See the module-level docs for examples._
 pub struct Gen<'s, Y, R, F: Future> {
@@ -47,15 +47,15 @@ pub struct Gen<'s, Y, R, F: Future> {
 impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     /// Creates a new generator from a function.
     ///
-    /// The state of the generator is stored in `state`, which will be pinned in
+    /// The state of the generator is stored in `shelf`, which will be pinned in
     /// place while this generator exists. The generator itself is movable,
-    /// since it holds a reference to the pinned state.
+    /// since it just holds a reference to the pinned state.
     ///
     /// The function accepts a [`Co`] object, and returns a future. Every time
     /// the generator is resumed, the future is polled. Each time the future is
     /// polled, it should do one of two things:
     ///
-    /// - Call `Co::yield_()`, and then return `Poll::Pending`.
+    /// - Call `co.yield_()`, and then return `Poll::Pending`.
     /// - Drop the `Co`, and then return `Poll::Ready`.
     ///
     /// Typically this exchange will happen in the context of an `async fn`.
@@ -105,8 +105,9 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
 
     /// Resumes execution of the generator.
     ///
-    /// The argument will become the output of the future returned from
-    /// [`Co::yield_`](struct.Co.html#method.yield_).
+    /// `arg` is the resume argument. If the generator was previously paused by
+    /// awaiting a future returned from `co.yield()`, that future will complete,
+    /// and return `arg`.
     ///
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.

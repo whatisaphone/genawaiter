@@ -19,8 +19,8 @@ fn test_basic() {
 }
 
 #[test]
-fn test_box_dyn() {
-    let gen = Gen::new_box_dyn(odd_numbers_less_than_ten);
+fn test_boxed() {
+    let gen = Gen::new_boxed(odd_numbers_less_than_ten);
     let xs: Vec<_> = gen.into_iter().collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }

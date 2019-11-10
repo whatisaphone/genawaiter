@@ -1,5 +1,5 @@
 /*!
-This module implements a generator which doesn't require allocation.
+This module implements a generator which doesn't allocate.
 
 You can create a generator with the [`generator_mut!`] macro:
 

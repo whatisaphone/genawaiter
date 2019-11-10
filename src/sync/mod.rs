@@ -12,11 +12,34 @@ async fn producer(co: Co<i32>) { /* ... */ }
 let mut generator = Gen::new(producer);
 ```
 
-# Remarks
+# Storing a generator in a `static`
 
-Do not let the `Co` object escape the scope of the generator. Once the starting future
-returns `Poll::Ready`, the `Co` object should already have been dropped. If this
-invariant is not upheld, the result will be memory-safe but otherwise left unspecified.
+In Rust, the type of static variables must be nameable, but the type of an `async fn` is
+not nameable – `async fn`s always return `impl Future`. So, in order to store a
+generator in a static, you'll need `dyn Future`, plus a layer of indirection. This crate
+provides the [`GenBoxed`](type.GenBoxed.html) type alias with the
+[`Gen::new_boxed`](type.GenBoxed.html#method.new_boxed) function to make this easier
+(and to smooth out a rough corner in the type inference).
+
+Additionally, as usual when dealing with statics in Rust, you'll need some form of
+synchronization. Here is one possible pattern, using the [`once_cell`] crate.
+
+[`once_cell`]: https://crates.io/crates/once_cell
+
+```ignore
+use genawaiter::sync::{Gen, GenBoxed};
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+
+static INEFFICIENT_COUNTER: Lazy<Mutex<GenBoxed<i32>>> =
+    Lazy::new(|| Mutex::new(Gen::new_boxed(|co| async move {
+        let mut n = 0;
+        loop {
+            n += 1;
+            co.yield_(n).await;
+        }
+    })));
+```
 
 # Examples
 
@@ -170,11 +193,11 @@ assert_eq!(gen.resume(), GeneratorState::Complete("done!"));
 ```
 */
 
-pub use box_dyn::GenBoxDyn;
+pub use boxed::GenBoxed;
 pub use engine::Co;
 pub use generator::Gen;
 
-mod box_dyn;
+mod boxed;
 mod engine;
 mod generator;
 mod iterator;

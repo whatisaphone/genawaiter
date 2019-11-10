@@ -11,16 +11,21 @@ with this crate, you can use them on stable Rust!
 
 # Choose your guarantees
 
-This crate supplies two concrete implementations of generators:
+This crate supplies three concrete implementations of generators:
 
-1. [`genawaiter::stack`](stack) – You should prefer this implementation in almost all
-   cases.
+1. [`genawaiter::stack`](stack) – Safe and allocation-free. You should prefer this in
+   most cases.
 
-2. [`genawaiter::rc`](rc) – This one is slower and, per its name, requires allocation.
-   Its only advantages are (1) it doesn't use a macro, and (2) it only has
-   [one line of unsafe code][the-line] under the hood, which is trivially auditable.
+2. [`genawaiter::sync`](sync) – This can be shared between threads and stored in a
+   `static` variable. To make this possible, it stores its state on the heap.
 
-   [the-line]: https://github.com/whatisaphone/genawaiter/blob/414dc5c/src/waker.rs#L7
+3. [`genawaiter::rc`](rc) – This is single-threaded and also allocates. Using this is
+   discouraged, and you should feel discouraged. Its only advantages over `stack` are
+   (1) it doesn't use macros, and (2) it only has [two][unus] [lines][duo] of
+   unsafe code, which are trivially auditable.
+
+   [unus]: https://github.com/whatisaphone/genawaiter/blob/4a2b185/src/waker.rs#L9
+   [duo]: https://github.com/whatisaphone/genawaiter/blob/4a2b185/src/rc/engine.rs#L26
 
 Read on for more general info about how generators work, and how data flows in and out
 of a generator.

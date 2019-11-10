@@ -5,6 +5,8 @@
 ### Added
 
 - `generator_mut!`, a safe wrapper on top of `unsafe_create_generator!`.
+- A version of `Gen` which can be shared between threads.
+- `Co` now detects when it's used after its generator has completed, and panics (in debug builds).
 
 ## v0.2.0 – 2019-11-07
 

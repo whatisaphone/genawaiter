@@ -1,4 +1,6 @@
-# genawaiter [![crate-badge]][crate-link] [![docs-badge]][docs-link] [![ci-badge]][ci-link]
+# genawaiter
+
+[![crate-badge]][crate-link] [![docs-badge]][docs-link] [![ci-badge]][ci-link]
 
 [crate-badge]: https://img.shields.io/crates/v/genawaiter.svg
 [crate-link]: https://crates.io/crates/genawaiter
