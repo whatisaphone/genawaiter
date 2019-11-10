@@ -24,11 +24,7 @@ impl<Y, R> core::Airlock for Airlock<Y, R> {
         // while the reference is taken, so concurrent access is not possible. The value
         // is not modified, so no shared references elsewhere can be invalidated.
         let inner = unsafe { &*self.0.as_ptr() };
-        match inner {
-            Next::Empty => Next::Empty,
-            Next::Yield(_) => Next::Yield(()),
-            Next::Resume(_) => Next::Resume(()),
-        }
+        inner.without_values()
     }
 
     fn replace(&self, next: Next<Y, R>) -> Next<Y, R> {

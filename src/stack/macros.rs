@@ -91,6 +91,33 @@ macro_rules! unsafe_create_generator {
     };
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::{ops::GeneratorState, stack::Co};
+
+    /// This test proves that `unsafe_create_generator` is actually unsafe.
+    #[test]
+    #[ignore = "compile-only test"]
+    fn unsafety() {
+        async fn shenanigans(co: Co<'_, i32>) -> Co<'_, i32> {
+            co
+        }
+
+        unsafe_create_generator!(gen, shenanigans);
+
+        // Get the `co` out of the generator (don't try this at home).
+        let escaped_co = match gen.resume() {
+            GeneratorState::Yielded(_) => panic!(),
+            GeneratorState::Complete(co) => co,
+        };
+        // Drop the generator. This drops the airlock (inside the state), but `co` still
+        // holds a reference to the airlock.
+        drop(gen);
+        // Now we're able to use an invalidated reference.
+        let _ = escaped_co.yield_(10);
+    }
+}
+
 #[allow(dead_code)]
 mod doctests {
     /**

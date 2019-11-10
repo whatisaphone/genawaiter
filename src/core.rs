@@ -9,6 +9,19 @@ pub enum Next<Y, R> {
     Empty,
     Yield(Y),
     Resume(R),
+    Completed,
+}
+
+#[allow(clippy::use_self)]
+impl<Y, R> Next<Y, R> {
+    pub fn without_values(&self) -> Next<(), ()> {
+        match self {
+            Self::Empty => Next::Empty,
+            Self::Yield(_) => Next::Yield(()),
+            Self::Resume(_) => Next::Resume(()),
+            Self::Completed => Next::Completed,
+        }
+    }
 }
 
 pub fn advance<Y, R, F: Future>(
@@ -22,7 +35,7 @@ pub fn advance<Y, R, F: Future>(
         Poll::Pending => {
             let value = airlock.replace(Next::Empty);
             match value {
-                Next::Empty => unreachable!(),
+                Next::Empty | Next::Completed => unreachable!(),
                 Next::Yield(y) => GeneratorState::Yielded(y),
                 Next::Resume(_) => {
                     #[cfg(debug_assertions)]
@@ -37,7 +50,12 @@ pub fn advance<Y, R, F: Future>(
                 }
             }
         }
-        Poll::Ready(value) => GeneratorState::Complete(value),
+        Poll::Ready(value) => {
+            #[cfg(debug_assertions)]
+            airlock.replace(Next::Completed);
+
+            GeneratorState::Complete(value)
+        }
     }
 }
 
@@ -76,6 +94,12 @@ impl<A: Airlock> Co<A> {
                      sure to immediately await the result of `Co::yield_`."
                 );
             }
+            Next::Completed => {
+                panic!(
+                    "`yield_` should not be used after the generator completes. The \
+                     `Co` object should have been dropped by now."
+                )
+            }
             Next::Empty | Next::Resume(()) => {}
         }
 
@@ -95,16 +119,15 @@ impl<'a, A: Airlock> Future for Barrier<'a, A> {
 
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.airlock.peek() {
-            Next::Empty => unreachable!(),
             Next::Yield(_) => Poll::Pending,
             Next::Resume(_) => {
                 let next = self.airlock.replace(Next::Empty);
                 match next {
-                    Next::Empty => unreachable!(),
-                    Next::Yield(_) => unreachable!(),
                     Next::Resume(arg) => Poll::Ready(arg),
+                    Next::Empty | Next::Yield(_) | Next::Completed => unreachable!(),
                 }
             }
+            Next::Empty | Next::Completed => unreachable!(),
         }
     }
 }

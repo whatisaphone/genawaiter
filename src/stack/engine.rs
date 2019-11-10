@@ -23,11 +23,7 @@ impl<'s, Y, R> core::Airlock for &'s Airlock<Y, R> {
     fn peek(&self) -> Next<(), ()> {
         // Safety: This follows the safety rules above.
         let inner = unsafe { &*self.0.get() };
-        match inner {
-            Next::Empty => Next::Empty,
-            Next::Yield(_) => Next::Yield(()),
-            Next::Resume(_) => Next::Resume(()),
-        }
+        inner.without_values()
     }
 
     fn replace(

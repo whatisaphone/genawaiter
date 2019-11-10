@@ -23,11 +23,7 @@ impl<Y, R> core::Airlock for Airlock<Y, R> {
     type Resume = R;
 
     fn peek(&self) -> Next<(), ()> {
-        match *self.0.lock().unwrap() {
-            Next::Empty => Next::Empty,
-            Next::Yield(_) => Next::Yield(()),
-            Next::Resume(_) => Next::Resume(()),
-        }
+        self.0.lock().unwrap().without_values()
     }
 
     fn replace(&self, next: Next<Y, R>) -> Next<Y, R> {

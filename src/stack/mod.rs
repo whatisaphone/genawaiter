@@ -261,25 +261,18 @@ mod tests {
         gen.resume();
     }
 
-    /// This test proves that `unsafe_create_generator` is actually unsafe.
     #[test]
-    #[ignore = "compile-only test"]
-    fn unsafety() {
+    #[should_panic = "should have been dropped by now"]
+    fn escaped_co_helpful_message() {
         async fn shenanigans(co: Co<'_, i32>) -> Co<'_, i32> {
             co
         }
 
-        unsafe_create_generator!(gen, shenanigans);
-
-        // Get the `co` out of the generator (don't try this at home).
+        generator_mut!(gen, shenanigans);
         let escaped_co = match gen.resume() {
             GeneratorState::Yielded(_) => panic!(),
             GeneratorState::Complete(co) => co,
         };
-        // Drop the generator. This drops the airlock (inside the state), but `co` still
-        // holds a reference to the airlock.
-        drop(gen);
-        // Now we're able to use an invalidated reference.
         let _ = escaped_co.yield_(10);
     }
 }

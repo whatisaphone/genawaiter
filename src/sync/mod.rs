@@ -265,6 +265,21 @@ mod tests {
         gen.resume();
     }
 
+    #[test]
+    #[should_panic = "should have been dropped by now"]
+    fn escaped_co_helpful_message() {
+        async fn shenanigans(co: Co<i32>) -> Co<i32> {
+            co
+        }
+
+        let mut gen = Gen::new(shenanigans);
+        let escaped_co = match gen.resume() {
+            GeneratorState::Yielded(_) => panic!(),
+            GeneratorState::Complete(co) => co,
+        };
+        let _ = escaped_co.yield_(10);
+    }
+
     /// This tests in a roundabout way that the `Gen` object can be moved. This
     /// should happen without moving the allocations inside so we don't
     /// segfault.
