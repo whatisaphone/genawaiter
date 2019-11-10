@@ -1,5 +1,5 @@
 /*!
-This module implements a generator which stores its state on the heap.
+This module implements a generator which can be shared between threads.
 
 You can create a generator with [`Gen::new`](struct.Gen.html#method.new). Pass it a
 function that bootstraps the generator:
@@ -170,9 +170,11 @@ assert_eq!(gen.resume(), GeneratorState::Complete("done!"));
 ```
 */
 
+pub use box_dyn::GenBoxDyn;
 pub use engine::Co;
 pub use generator::Gen;
 
+mod box_dyn;
 mod engine;
 mod generator;
 mod iterator;
