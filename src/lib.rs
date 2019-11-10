@@ -173,6 +173,7 @@ mod ext;
 mod ops;
 pub mod rc;
 pub mod stack;
+pub mod sync;
 #[cfg(test)]
 mod testing;
 mod waker;
