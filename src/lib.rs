@@ -158,7 +158,7 @@ assert_eq!(generator.resume(), GeneratorState::Complete("done"));
 This crate supplies [`Generator`](trait.Generator.html) and
 [`GeneratorState`](enum.GeneratorState.html). They are copy/pasted from the stdlib (with
 stability attributes removed) so they can be used on stable Rust. If/when real
-generators are stabilized, hopefully they would be drop-in replacements. Javscript
+generators are stabilized, hopefully they would be drop-in replacements. Javascript
 developers might recognize this as a polyfill.
 
 There is also a [`Coroutine`](trait.Coroutine.html) trait, which does not come from the
