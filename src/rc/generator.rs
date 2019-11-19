@@ -1,5 +1,5 @@
 use crate::{
-    core::{advance, Airlock as _, Next},
+    core::{advance, async_advance, Airlock as _, Next},
     ops::{Coroutine, GeneratorState},
     rc::{engine::Airlock, Co},
 };
@@ -57,6 +57,20 @@ impl<Y, F: Future> Gen<Y, (), F> {
     /// _See the module-level docs for examples._
     pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
         self.resume_with(())
+    }
+
+    /// Resumes execution of the generator.
+    ///
+    /// If the generator pauses without yielding, `Poll::Pending` is returned.
+    /// If the generator yields a value, `Poll::Ready(Yielded)` is returned.
+    /// Otherwise, `Poll::Ready(Completed)` is returned.
+    ///
+    /// _See the module-level docs for examples._
+    pub fn async_resume(
+        &mut self,
+    ) -> impl Future<Output = GeneratorState<Y, F::Output>> + '_ {
+        self.airlock.replace(Next::Resume(()));
+        async_advance(self.future.as_mut(), self.airlock.clone())
     }
 }
 

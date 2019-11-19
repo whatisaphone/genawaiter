@@ -40,13 +40,13 @@ pub fn advance<Y, R, F: Future>(
                 Next::Resume(_) => {
                     #[cfg(debug_assertions)]
                     panic!(
-                        "A generator was awaited without first yielding a value. \
-                         Inside a generator, do not await any futures other than the \
-                         one returned by `Co::yield_`.",
+                        "An async generator was resumed via a non-async method. For \
+                         async generators, use `Stream` or `async_resume` instead of \
+                         `Iterator` or `resume`.",
                     );
 
                     #[cfg(not(debug_assertions))]
-                    panic!("invalid await");
+                    panic!("misused async generator");
                 }
             }
         }
@@ -55,6 +55,43 @@ pub fn advance<Y, R, F: Future>(
             airlock.replace(Next::Completed);
 
             GeneratorState::Complete(value)
+        }
+    }
+}
+
+pub fn async_advance<'a, Y, R, F: Future>(
+    future: Pin<&'a mut F>,
+    airlock: impl Airlock<Yield = Y, Resume = R> + 'a,
+) -> impl Future<Output = GeneratorState<Y, F::Output>> + 'a {
+    Advance { future, airlock }
+}
+
+struct Advance<'a, F: Future, A: Airlock> {
+    future: Pin<&'a mut F>,
+    airlock: A,
+}
+
+impl<'a, F: Future, A: Airlock> Future for Advance<'a, F, A> {
+    type Output = GeneratorState<A::Yield, F::Output>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        // Safety: `self` is not moved.
+        let future = unsafe { self.as_mut().map_unchecked_mut(|s| &mut s.future) };
+        match future.poll(cx) {
+            Poll::Pending => {
+                let value = self.airlock.replace(Next::Empty);
+                match value {
+                    Next::Empty | Next::Resume(_) => Poll::Pending,
+                    Next::Yield(y) => Poll::Ready(GeneratorState::Yielded(y)),
+                    Next::Completed => unreachable!(),
+                }
+            }
+            Poll::Ready(value) => {
+                #[cfg(debug_assertions)]
+                self.airlock.replace(Next::Completed);
+
+                Poll::Ready(GeneratorState::Complete(value))
+            }
         }
     }
 }

@@ -13,12 +13,12 @@ repos:
         name: check
         language: system
         files: '[.]rs$'
-        entry: cargo clippy --all-targets --features strict
+        entry: cargo clippy --all-targets --features strict,futures03
         pass_filenames: false
 
       - id: test
         name: test
         language: system
         files: '[.]rs$'
-        entry: cargo test
+        entry: cargo test --features strict,futures03
         pass_filenames: false

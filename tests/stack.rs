@@ -3,6 +3,7 @@
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
+use futures::executor::block_on_stream;
 use genawaiter::{
     generator_mut,
     stack::{Co, Gen, Shelf},
@@ -28,5 +29,13 @@ fn test_shelf() {
     let gen = unsafe { Gen::new(&mut shelf, odd_numbers_less_than_ten) };
 
     let xs: Vec<_> = gen.into_iter().collect();
+    assert_eq!(xs, [1, 3, 5, 7, 9]);
+}
+
+#[cfg(feature = "futures03")]
+#[test]
+fn test_stream() {
+    generator_mut!(gen, odd_numbers_less_than_ten);
+    let xs: Vec<_> = block_on_stream(gen).collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }

@@ -112,13 +112,6 @@ ways:
   assert_eq!(xs, [10]);
   ```
 
-If you do not follow the `co.yield_().await` pattern above, behavior is memory-safe, but
-otherwise left unspecified. This crate tries to panic whenever the rules are broken, on
-a best-effort basis. To stay on the happy path, follow these rules:
-
-- Whenever calling `yield_`, always immediately await its result.
-- Do not await any futures other than the ones returned by `yield_`.
-
 ## Resume arguments
 
 You can also send values back into the generator, by using `resume_with`. The generator
@@ -151,6 +144,57 @@ let mut generator = Gen::new(|co| async move {
 });
 assert_eq!(generator.resume(), GeneratorState::Yielded(10));
 assert_eq!(generator.resume(), GeneratorState::Complete("done"));
+```
+
+# Async generators
+
+If you await other futures inside the generator, it becomes an _async generator_. It
+does not makes sense to treat an async generator as an `Iterable`, since you cannot
+`await` an `Iterable`. Instead, you can treat it as a `Stream`. This requires opting in
+to the dependency on `futures` with the `futures03` feature.
+
+```toml
+[dependencies]
+genawaiter = { version = "...", features = ["futures03"] }
+```
+
+```rust
+# use futures::executor::block_on_stream;
+# use genawaiter::{GeneratorState, rc::Gen};
+#
+# #[cfg(feature = "futures03")] {
+async fn async_one() -> i32 { 1 }
+async fn async_two() -> i32 { 2 }
+
+let gen = Gen::new(|co| async move {
+    let one = async_one().await;
+    co.yield_(one).await;
+    let two = async_two().await;
+    co.yield_(two).await;
+});
+let stream = block_on_stream(gen);
+let items: Vec<_> = stream.collect();
+assert_eq!(items, [1, 2]);
+# }
+```
+
+Async generators also provide a `async_resume` method for lower-level control. (This
+works even without the `futures03` feature.)
+
+```rust
+# use genawaiter::{GeneratorState, rc::Gen};
+# use std::task::Poll;
+#
+# async fn x() {
+# let mut gen = Gen::new(|co| async move {
+#     co.yield_(10).await;
+# });
+#
+match gen.async_resume().await {
+    GeneratorState::Yielded(_) => {}
+    GeneratorState::Complete(_) => {}
+}
+# }
 ```
 
 # Backported stdlib types

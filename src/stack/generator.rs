@@ -1,5 +1,5 @@
 use crate::{
-    core::{advance, Airlock as _, Next},
+    core::{advance, async_advance, Airlock as _, Next},
     ext::MaybeUninitExt,
     ops::{Coroutine, GeneratorState},
     stack::engine::{Airlock, Co},
@@ -114,15 +114,19 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     ///
     /// _See the module-level docs for examples._
     pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
+        let (future, airlock) = self.project();
+        airlock.replace(Next::Resume(arg));
+        advance(future, &airlock)
+    }
+
+    fn project(&mut self) -> (Pin<&mut F>, &Airlock<Y, R>) {
         unsafe {
             // Safety: `future` is pinned, but never moved. `airlock` is never pinned.
             let state = self.state.as_mut().get_unchecked_mut();
 
-            (&state.airlock).replace(Next::Resume(arg));
-
             let future = Pin::new_unchecked(&mut state.future);
             let airlock = &state.airlock;
-            advance(future, &airlock)
+            (future, airlock)
         }
     }
 }
@@ -148,6 +152,21 @@ impl<'s, Y, F: Future> Gen<'s, Y, (), F> {
     /// _See the module-level docs for examples._
     pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
         self.resume_with(())
+    }
+
+    /// Resumes execution of the generator.
+    ///
+    /// If the generator pauses without yielding, `Poll::Pending` is returned.
+    /// If the generator yields a value, `Poll::Ready(Yielded)` is returned.
+    /// Otherwise, `Poll::Ready(Completed)` is returned.
+    ///
+    /// _See the module-level docs for examples._
+    pub fn async_resume(
+        &mut self,
+    ) -> impl Future<Output = GeneratorState<Y, F::Output>> + '_ {
+        let (future, airlock) = self.project();
+        airlock.replace(Next::Resume(()));
+        async_advance(future, airlock)
     }
 }
 

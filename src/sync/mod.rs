@@ -202,6 +202,9 @@ mod engine;
 mod generator;
 mod iterator;
 
+#[cfg(feature = "futures03")]
+mod stream;
+
 #[cfg(feature = "nightly")]
 #[cfg(test)]
 mod nightly_tests;
@@ -210,9 +213,10 @@ mod nightly_tests;
 mod tests {
     use crate::{
         sync::{Co, Gen},
-        testing::DummyFuture,
+        testing::{DummyFuture, SlowFuture},
         GeneratorState,
     };
+    use futures::executor::block_on;
     use std::{
         cell::{Cell, RefCell},
         future::Future,
@@ -266,7 +270,32 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Co::yield_")]
+    fn async_resume() {
+        async fn produce(co: Co<i32>) {
+            SlowFuture::new().await;
+            co.yield_(10).await;
+            SlowFuture::new().await;
+            co.yield_(20).await;
+        }
+
+        async fn run_test() {
+            let mut gen = Gen::new(produce);
+
+            let x = gen.async_resume().await;
+            assert_eq!(x, GeneratorState::Yielded(10));
+
+            let x = gen.async_resume().await;
+            assert_eq!(x, GeneratorState::Yielded(20));
+
+            let x = gen.async_resume().await;
+            assert_eq!(x, GeneratorState::Complete(()));
+        }
+
+        block_on(run_test());
+    }
+
+    #[test]
+    #[should_panic(expected = "non-async method")]
     fn forbidden_await_helpful_message() {
         async fn wrong(_: Co<i32>) {
             DummyFuture.await;

@@ -26,12 +26,13 @@ jobs:
           profile: minimal
           components: clippy
           override: true
-      - run: cargo clippy --all-targets --features strict
+      - run: cargo clippy --all-targets --features strict,futures03
 
   test:
     strategy:
       matrix:
         toolchain: [1.39.0, nightly-2019-11-06]
+        features: [, --features futures03]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -40,4 +41,4 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           profile: minimal
           override: true
-      - run: cargo test
+      - run: cargo test ${{ matrix.features }}

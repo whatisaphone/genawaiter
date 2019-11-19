@@ -182,6 +182,9 @@ mod engine;
 mod generator;
 mod iterator;
 
+#[cfg(feature = "futures03")]
+mod stream;
+
 #[cfg(feature = "nightly")]
 #[cfg(test)]
 mod nightly_tests;
@@ -245,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Co::yield_")]
+    #[should_panic(expected = "non-async method")]
     fn forbidden_await_helpful_message() {
         async fn wrong(_: Co<'_, i32>) {
             DummyFuture.await;
