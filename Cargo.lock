@@ -84,7 +84,7 @@ dependencies = [
 
 [[package]]
 name = "genawaiter"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
