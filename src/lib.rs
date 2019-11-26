@@ -215,6 +215,7 @@ resume argument type to `()`, but in a `Coroutine` it can be anything.
 #![warn(missing_docs, clippy::cargo, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
+pub use gen_proc_macro::{yielder_cls, yielder_fn};
 pub use ops::{Coroutine, Generator, GeneratorState};
 
 mod core;
