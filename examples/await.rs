@@ -1,11 +1,13 @@
 #![feature(async_closure)]
 #![feature(proc_macro_hygiene)]
 #![feature(generators)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 
 use genawaiter::{
     generator_mut,
     stack::{Co, Gen, Shelf},
-    // sync::{Gen, Co},
 };
 
 use gen_proc_macro::{yielder_cls, yielder_fn};
@@ -36,13 +38,15 @@ fn main() {
 
     let mut shelf = Shelf::new();
     #[yielder_cls(u8)]
-    let gen = unsafe { Gen::new(&mut shelf, async move || {
-        let mut n = 1_u8;
-        while n < 10 {
-            yield n;
-            n += 2;
-        }
-    }) };
+    let gen = unsafe {
+        Gen::new(&mut shelf, async move || {
+            let mut n = 1_u8;
+            while n < 10 {
+                yield n;
+                n += 2;
+            }
+        })
+    };
     // let gen = Gen::new(odds);
 
     // generator_mut!(test, hello);
