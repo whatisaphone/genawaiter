@@ -21,7 +21,6 @@ fn test_basic() {
 #[cfg(feature = "futures03")]
 #[test]
 fn test_stream() {
-    // fix unused imports warning
     use futures::executor::block_on_stream;
 
     let gen = Gen::new(odd_numbers_less_than_ten);

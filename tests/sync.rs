@@ -28,7 +28,6 @@ fn test_boxed() {
 #[cfg(feature = "futures03")]
 #[test]
 fn test_stream() {
-    // makes the warning go away
     use futures::executor::block_on_stream;
 
     let gen = Gen::new(odd_numbers_less_than_ten);

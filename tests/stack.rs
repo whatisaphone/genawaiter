@@ -34,7 +34,6 @@ fn test_shelf() {
 #[cfg(feature = "futures03")]
 #[test]
 fn test_stream() {
-    // makes unused imports warning go away
     use futures::executor::block_on_stream;
 
     generator_mut!(gen, odd_numbers_less_than_ten);
