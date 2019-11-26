@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.2 – 2019-11-25
+
+### Added
+
+- Implement `Stream` for generators. (requires opting in to the dependency with the feature `futures03`)
+
 ## v0.2.1 – 2019-11-11
 
 ### Added
