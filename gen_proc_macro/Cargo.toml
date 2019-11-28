@@ -3,8 +3,11 @@ name = "gen_proc_macro"
 version = "0.0.0"
 authors = ["Devin R <devin.ragotzy@gmail.com>"]
 description = "procedural macro for generators (genawaiter)"
-keywords = ["proc_macro", "procmacro", "async"]
 edition = "2018"
+repository = "https://github.com/whatisaphone/genawaiter"
+readme = ""
+keywords = ["generator", "yield", "coroutine", "async", "await"]
+categories = ["asynchronous", "concurrency", "rust-patterns"]
 
 [lib]
 proc-macro = true
