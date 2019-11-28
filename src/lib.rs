@@ -210,12 +210,16 @@ stdlib. A `Coroutine` is a generalization of a `Generator`. A `Generator` constr
 resume argument type to `()`, but in a `Coroutine` it can be anything.
 */
 
-#![cfg_attr(feature = "nightly", feature(async_await, async_closure))]
+#![cfg_attr(feature = "nightly", feature(async_await, async_closure, proc_macro_hygiene))]
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
 #![warn(missing_docs, clippy::cargo, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-pub use gen_proc_macro::{yielder_cls, yielder_fn};
+pub use gen_proc_macro::{
+    yielder_cls, yielder_fn,
+    yielder_fn_sync, yilder_cls_sync,
+    yielder_fn_rc, yilder_cls_rc,
+};
 pub use ops::{Coroutine, Generator, GeneratorState};
 
 mod core;
@@ -232,12 +236,13 @@ mod waker;
 /// This macro is used to replace the keyword yield to
 /// avoid using nightly features when using any of the three
 /// `proc_macro_attributes` for easy generator definition.
-/// 
+///
 /// # Example
 /// ```
+/// use genawaiter::yield_;
 /// async fn odds() {
-///     for n in (1..).step_by(2).take_while(|n| n < 10) {
-///         yield_!{ n }
+///     for n in (1..).step_by(2).take_while(|n| *n < 10) {
+///         yield_! { n }
 ///     }
 /// }
 /// ```
