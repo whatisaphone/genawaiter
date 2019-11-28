@@ -12,3 +12,17 @@ fn async_closure() {
     assert_eq!(gen.resume(), GeneratorState::Yielded(10));
     assert_eq!(gen.resume(), GeneratorState::Complete("done"));
 }
+
+#[test]
+fn sync_proc_macro_closure() {
+    #[yielder_cls(u8)]
+    let gen = unsafe {
+        Gen::new(async move || {
+            let mut n = 1_u8;
+            while n < 10 {
+                yield_! { n };
+                n += 2;
+            }
+        })
+    };
+}

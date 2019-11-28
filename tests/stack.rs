@@ -6,6 +6,7 @@
 use genawaiter::{
     generator_mut,
     stack::{Co, Gen, Shelf},
+    yield_, yielder_fn,
 };
 
 async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
@@ -39,4 +40,17 @@ fn test_stream() {
     generator_mut!(gen, odd_numbers_less_than_ten);
     let xs: Vec<_> = block_on_stream(gen).collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
+}
+
+#[test]
+fn stack_proc_macro_fn() {
+    #[yielder_fn(u8)]
+    async fn odds() {
+        for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
+            yield_! { n };
+        }
+    }
+    generator_mut!(gen, odds);
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
