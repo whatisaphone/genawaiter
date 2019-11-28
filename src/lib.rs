@@ -227,3 +227,22 @@ pub mod sync;
 #[cfg(test)]
 mod testing;
 mod waker;
+
+#[macro_export]
+/// This macro is used to replace the keyword yield to
+/// avoid using nightly features when using any of the three
+/// `proc_macro_attributes` for easy generator definition.
+/// 
+/// # Example
+/// ```
+/// async fn odds() {
+///     for n in (1..).step_by(2).take_while(|n| n < 10) {
+///         yield_!{ n }
+///     }
+/// }
+/// ```
+macro_rules! yield_ {
+    ($val:tt) => {
+        ()
+    };
+}
