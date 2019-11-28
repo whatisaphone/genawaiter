@@ -210,15 +210,21 @@ stdlib. A `Coroutine` is a generalization of a `Generator`. A `Generator` constr
 resume argument type to `()`, but in a `Coroutine` it can be anything.
 */
 
-#![cfg_attr(feature = "nightly", feature(async_await, async_closure, proc_macro_hygiene))]
+#![cfg_attr(
+    feature = "nightly",
+    feature(async_await, async_closure, proc_macro_hygiene)
+)]
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
 #![warn(missing_docs, clippy::cargo, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
 pub use gen_proc_macro::{
-    yielder_cls, yielder_fn,
-    yielder_fn_sync, yilder_cls_sync,
-    yielder_fn_rc, yilder_cls_rc,
+    yielder_cls,
+    yielder_cls_rc,
+    yielder_cls_sync,
+    yielder_fn,
+    yielder_fn_rc,
+    yielder_fn_sync,
 };
 pub use ops::{Coroutine, Generator, GeneratorState};
 

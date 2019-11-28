@@ -14,7 +14,8 @@ use syn::{
 
 use crate::common::replace_yield_cls;
 
-/// Mutates the input `Punctuated<FnArg, Comma>` to a lifetimeless `co: Co<{type}>`.
+/// Mutates the input `Punctuated<FnArg, Comma>` to a lifetimeless `co:
+/// Co<{type}>`.
 pub(crate) fn add_coroutine_arg(punct: &mut Punctuated<FnArg, Comma>, co_ty: String) {
     if !punct.iter().any(|input| {
         match input {
@@ -32,16 +33,20 @@ pub(crate) fn add_coroutine_arg(punct: &mut Punctuated<FnArg, Comma>, co_ty: Str
             }
         }
     }) {
-        let co_arg: FnArg = match parse_str::<FnArg>(&format!("co: ::genawaiter::sync::Co<{}>", co_ty))
-        {
-            Ok(s) => s,
-            Err(err) => abort_call_site!(format!("invalid type for Co yield {}", err)),
-        };
+        let co_arg: FnArg =
+            match parse_str::<FnArg>(&format!("co: ::genawaiter::sync::Co<{}>", co_ty))
+            {
+                Ok(s) => s,
+                Err(err) => {
+                    abort_call_site!(format!("invalid type for Co yield {}", err))
+                }
+            };
         punct.push_value(co_arg)
     }
 }
 
-/// Mutates the input `Punctuated<Pat, Comma>` to a lifetimeless `co: Co<{type}>` for closures.
+/// Mutates the input `Punctuated<Pat, Comma>` to a lifetimeless `co:
+/// Co<{type}>` for closures.
 pub(crate) fn add_coroutine_arg_cls(punct: &mut Punctuated<Pat, Comma>, co_ty: String) {
     if !punct.iter().any(|input| {
         match input {
@@ -59,10 +64,12 @@ pub(crate) fn add_coroutine_arg_cls(punct: &mut Punctuated<Pat, Comma>, co_ty: S
             _ => false,
         }
     }) {
-        let arg = match parse_str::<FnArg>(&format!("co: ::genawaiter::sync::Co<{}>", co_ty)) {
-            Ok(FnArg::Typed(x)) => x,
-            _ => abort_call_site!("string Pat parse failed Co<...>"),
-        };
+        let arg =
+            match parse_str::<FnArg>(&format!("co: ::genawaiter::sync::Co<{}>", co_ty))
+            {
+                Ok(FnArg::Typed(x)) => x,
+                _ => abort_call_site!("string Pat parse failed Co<...>"),
+            };
         punct.push(Pat::Type(arg))
     }
 }
