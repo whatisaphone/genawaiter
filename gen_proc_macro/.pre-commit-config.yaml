@@ -1,0 +1,24 @@
+fail_fast: true
+
+repos:
+  - repo: local
+    hooks:
+      - id: fmt
+        name: fmt
+        language: system
+        files: '[.]rs$'
+        entry: rustup run nightly-2019-11-06 rustfmt
+
+      - id: check
+        name: check-proc-macro
+        language: system
+        files: '[.]rs$'
+        entry: cargo clippy --all-targets
+        pass_filenames: false
+
+      - id: test
+        name: test-proc-macro
+        language: system
+        files: '[.]rs$'
+        entry: cargo test
+        pass_filenames: false

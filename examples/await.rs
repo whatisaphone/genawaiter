@@ -8,6 +8,7 @@
 use genawaiter::{
     generator_mut,
     stack::{Co, Gen, Shelf},
+    yield_
 };
 
 use gen_proc_macro::{yielder_cls, yielder_fn};
@@ -15,7 +16,7 @@ use gen_proc_macro::{yielder_cls, yielder_fn};
 #[yielder_fn(u8)]
 async fn odds() {
     for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
-        yield n;
+        yield_!{ n };
     }
 }
 
@@ -24,7 +25,7 @@ fn main() {
     let hello = async move |co: Co<'static, u8>| {
         let mut n = 1_u8;
         while n < 10 {
-            yield n;
+            yield_!{ n };
             n += 2;
         }
     };
@@ -42,7 +43,7 @@ fn main() {
         Gen::new(&mut shelf, async move || {
             let mut n = 1_u8;
             while n < 10 {
-                yield n;
+                yield_!{ n };
                 n += 2;
             }
         })

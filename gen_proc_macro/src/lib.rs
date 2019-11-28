@@ -16,6 +16,7 @@ use syn::{
     Expr,
     FnArg,
     Ident,
+    Item,
     ItemFn,
     Pat,
     Stmt,
@@ -68,32 +69,41 @@ fn replace_yield(blk: &mut Block) {
     let stmts = &mut blk.stmts;
 
     for stmt in stmts.iter_mut() {
+        println!("{:#?}", stmt);
         match stmt {
             Stmt::Expr(Expr::ForLoop(loopy)) => {
+                println!("{:#?}", loopy);
                 let loop_stmts = &mut loopy.body.stmts;
                 let yield_idx = loop_stmts.iter().position(|loop_stmt| {
                     match loop_stmt {
-                        Stmt::Expr(Expr::Yield(_)) => true,
-                        Stmt::Semi(Expr::Yield(_), _) => true,
+                        Stmt::Item(Item::Macro(m)) => {
+                            if let Some(id) = m.mac.path.get_ident() {
+                                println!("{:?}", m);
+                                id == "yield_"
+                            } else { false }
+                        },
+                        // Stmt::Item(Item::Macro(m)) => {
+                        //     if let Some(id) = m.mac.path.get_ident() {
+                        //         println!("{:?}", m);
+                        //         id == "yield_"
+                        //     } else { false }
+                        // }
                         _ => false,
                     }
                 });
                 if let Some(idx) = yield_idx {
                     let ident = match loop_stmts.get(idx) {
-                        Some(Stmt::Expr(Expr::Yield(yd_expr))) => {
-                            if let Some(ex) = yd_expr.expr.as_ref() {
-                                quote! { #ex }
-                            } else {
-                                abort!(yd_expr.span(), "must yield explicit `()`")
-                            }
+                        Some(Stmt::Item(Item::Macro(yd_expr))) => {
+                            let ex: Ident = syn::parse2(yd_expr.mac.tokens.clone()).expect("");
+                            quote! { #ex }
                         }
-                        Some(Stmt::Semi(Expr::Yield(yd_expr), _)) => {
-                            if let Some(ex) = yd_expr.expr.as_ref() {
-                                quote! { #ex }
-                            } else {
-                                abort!(yd_expr.span(), "must yield explicit `()`")
-                            }
-                        }
+                        // Some(Stmt::Semi(Expr::Yield(yd_expr), _)) => {
+                        //     if let Some(ex) = yd_expr.expr.as_ref() {
+                        //         quote! { #ex }
+                        //     } else {
+                        //         abort!(yd_expr.span(), "must yield explicit `()`")
+                        //     }
+                        // }
                         _ => panic!("bug found index of yield in stmts but no yield"),
                     };
                     let co_call = quote! { co.yield_(#ident).await; };
@@ -101,32 +111,35 @@ fn replace_yield(blk: &mut Block) {
                     loop_stmts.remove(idx);
                     loop_stmts.insert(idx, cc);
                 }
-            }
+            },
             Stmt::Expr(Expr::While(loopy)) => {
                 let loop_stmts = &mut loopy.body.stmts;
                 let yield_idx = loop_stmts.iter().position(|loop_stmt| {
                     match loop_stmt {
-                        Stmt::Expr(Expr::Yield(_)) => true,
-                        Stmt::Semi(Expr::Yield(_), _) => true,
+                        Stmt::Item(Item::Macro(m)) => {
+                            if let Some(id) = m.mac.path.get_ident() {
+                                println!("{:?}", m);
+                                id == "yield_"
+                            } else {
+                                false
+                            }
+                        },
                         _ => false,
                     }
                 });
                 if let Some(idx) = yield_idx {
                     let ident = match loop_stmts.get(idx) {
-                        Some(Stmt::Expr(Expr::Yield(yd_expr))) => {
-                            if let Some(ex) = yd_expr.expr.as_ref() {
-                                quote! { #ex }
-                            } else {
-                                abort!(yd_expr.span(), "must yield explicit `()`")
-                            }
+                        Some(Stmt::Item(Item::Macro(yd_expr))) => {
+                            let ex: Ident = syn::parse2(yd_expr.mac.tokens.clone()).expect("");
+                            quote! { #ex }
                         }
-                        Some(Stmt::Semi(Expr::Yield(yd_expr), _)) => {
-                            if let Some(ex) = yd_expr.expr.as_ref() {
-                                quote! { #ex }
-                            } else {
-                                abort!(yd_expr.span(), "must yield explicit `()`")
-                            }
-                        }
+                        // Some(Stmt::Semi(Expr::Yield(yd_expr), _)) => {
+                        //     if let Some(ex) = yd_expr.expr.as_ref() {
+                        //         quote! { #ex }
+                        //     } else {
+                        //         abort!(yd_expr.span(), "must yield explicit `()`")
+                        //     }
+                        // }
                         _ => panic!("bug found index of yield in stmts but no yield"),
                     };
                     let co_call = quote! { co.yield_(#ident).await; };
@@ -134,25 +147,42 @@ fn replace_yield(blk: &mut Block) {
                     loop_stmts.remove(idx);
                     loop_stmts.insert(idx, cc);
                 }
-            }
-            Stmt::Expr(Expr::Yield(yd_expr)) => {
-                if let Some(ex) = yd_expr.expr.as_ref() {
-                    let co_call = quote! { co.yield_(#ex).await; };
-                    let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
-                    std::mem::replace(stmt, cc);
+            },
+            Stmt::Item(Item::Macro(m)) => {
+                if let Some(id) = m.mac.path.get_ident() {
+                    if id == "yield_" {
+                        let ex: Ident = syn::parse2(m.mac.tokens.clone())
+                            .or_else::<(), _>(|e| {
+                                abort!(m.span(), format!("must yield explicit `()` {}", e))
+                            })
+                            .unwrap();
+                        let co_call = quote! { co.yield_(#ex).await; };
+                        let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
+                        std::mem::replace(stmt, cc);
+                    }
                 } else {
-                    abort!(yd_expr.span(), "must yield explicit `()`")
+                    abort!(m.span(), "must yield explicit `()`")
                 }
-            }
-            Stmt::Semi(Expr::Yield(yd_expr), _) => {
-                if let Some(ex) = yd_expr.expr.as_ref() {
-                    let co_call = quote! { co.yield_(#ex).await; };
-                    let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
-                    std::mem::replace(stmt, cc);
-                } else {
-                    abort!(yd_expr.span(), "must yield explicit `()`")
-                }
-            }
+            },
+            // Stmt::Expr(Expr::Yield(yd_expr)) => {
+            //     if let Some(ex) = yd_expr.expr.as_ref() {
+
+            //         let co_call = quote! { co.yield_(#ex).await; };
+            //         let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
+            //         std::mem::replace(stmt, cc);
+            //     } else {
+            //         abort!(yd_expr.span(), "must yield explicit `()`")
+            //     }
+            // }
+            // Stmt::Semi(Expr::Yield(yd_expr), _) => {
+            //     if let Some(ex) = yd_expr.expr.as_ref() {
+            //         let co_call = quote! { co.yield_(#ex).await; };
+            //         let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
+            //         std::mem::replace(stmt, cc);
+            //     } else {
+            //         abort!(yd_expr.span(), "must yield explicit `()`")
+            //     }
+            // }
             _ => continue,
         }
     }
@@ -265,27 +295,21 @@ fn parse_block_stmts(stmts: &mut [Stmt]) {
                 let loop_stmts = &mut loopy.body.stmts;
                 let yield_idx = loop_stmts.iter().position(|loop_stmt| {
                     match loop_stmt {
-                        Stmt::Expr(Expr::Yield(_)) => true,
-                        Stmt::Semi(Expr::Yield(_), _) => true,
+                        Stmt::Item(Item::Macro(m)) => {
+                            if let Some(id) = m.mac.path.get_ident() {
+                                println!("{:?}", m);
+                                id == "yield_"
+                            } else { false }
+                        },
                         _ => false,
                     }
                 });
                 if let Some(idx) = yield_idx {
                     let ident = match loop_stmts.get(idx) {
-                        Some(Stmt::Expr(Expr::Yield(yd_expr))) => {
-                            if let Some(ex) = yd_expr.expr.as_ref() {
-                                quote! { #ex }
-                            } else {
-                                abort!(yd_expr.span(), "must yield explicit `()`")
-                            }
-                        }
-                        Some(Stmt::Semi(Expr::Yield(yd_expr), _)) => {
-                            if let Some(ex) = yd_expr.expr.as_ref() {
-                                quote! { #ex }
-                            } else {
-                                abort!(yd_expr.span(), "must yield explicit `()`")
-                            }
-                        }
+                        Some(Stmt::Item(Item::Macro(yd_expr))) => {
+                            let ex: Ident = syn::parse2(yd_expr.mac.tokens.clone()).expect("");
+                            quote! { #ex }
+                        },
                         _ => panic!("bug found index of yield in stmts but no yield"),
                     };
                     let co_call = quote! { co.yield_(#ident).await; };
@@ -298,26 +322,22 @@ fn parse_block_stmts(stmts: &mut [Stmt]) {
                 let loop_stmts = &mut loopy.body.stmts;
                 let yield_idx = loop_stmts.iter().position(|loop_stmt| {
                     match loop_stmt {
-                        Stmt::Expr(Expr::Yield(_)) => true,
-                        Stmt::Semi(Expr::Yield(_), _) => true,
+                        Stmt::Item(Item::Macro(m)) => {
+                            if let Some(id) = m.mac.path.get_ident() {
+                                println!("{:?}", m);
+                                id == "yield_"
+                            } else {
+                                false
+                            }
+                        },
                         _ => false,
                     }
                 });
                 if let Some(idx) = yield_idx {
                     let ident = match loop_stmts.get(idx) {
-                        Some(Stmt::Expr(Expr::Yield(yd_expr))) => {
-                            if let Some(ex) = yd_expr.expr.as_ref() {
-                                quote! { #ex }
-                            } else {
-                                abort!(yd_expr.span(), "must yield explicit `()`")
-                            }
-                        }
-                        Some(Stmt::Semi(Expr::Yield(yd_expr), _)) => {
-                            if let Some(ex) = yd_expr.expr.as_ref() {
-                                quote! { #ex }
-                            } else {
-                                abort!(yd_expr.span(), "must yield explicit `()`")
-                            }
+                        Some(Stmt::Item(Item::Macro(yd_expr))) => {
+                            let ex: Ident = syn::parse2(yd_expr.mac.tokens.clone()).expect("");
+                            quote! { #ex }
                         }
                         _ => panic!("bug found index of yield in stmts but no yield"),
                     };
@@ -326,25 +346,23 @@ fn parse_block_stmts(stmts: &mut [Stmt]) {
                     loop_stmts.remove(idx);
                     loop_stmts.insert(idx, cc);
                 }
-            }
-            Stmt::Expr(Expr::Yield(yd_expr)) => {
-                if let Some(ex) = yd_expr.expr.as_ref() {
-                    let co_call = quote! { co.yield_(#ex).await; };
-                    let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
-                    std::mem::replace(stmt, cc);
+            },
+            Stmt::Item(Item::Macro(m)) => {
+                if let Some(id) = m.mac.path.get_ident() {
+                    if id == "yield_" {
+                        let ex: Ident = syn::parse2(m.mac.tokens.clone())
+                            .or_else::<(), _>(|e| {
+                                abort!(m.span(), format!("must yield explicit `()` {}", e))
+                            })
+                            .unwrap();
+                        let co_call = quote! { co.yield_(#ex).await; };
+                        let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
+                        std::mem::replace(stmt, cc);
+                    }
                 } else {
-                    abort!(yd_expr.span(), "must yield explicit `()`")
+                    abort!(m.span(), "must yield explicit `()`")
                 }
-            }
-            Stmt::Semi(Expr::Yield(yd_expr), _) => {
-                if let Some(ex) = yd_expr.expr.as_ref() {
-                    let co_call = quote! { co.yield_(#ex).await; };
-                    let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
-                    std::mem::replace(stmt, cc);
-                } else {
-                    abort!(yd_expr.span(), "must yield explicit `()`")
-                }
-            }
+            },
             _ => continue,
         }
     }
