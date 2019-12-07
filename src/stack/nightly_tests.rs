@@ -1,7 +1,11 @@
 // These tests can't be parsed on non-nightly compilers, so move them to a
 // separate file.
 
-use crate::ops::GeneratorState;
+use crate::{
+    ops::GeneratorState,
+    stack::{yielder_cls, Shelf},
+    yield_,
+};
 
 #[test]
 fn async_closure() {
@@ -15,7 +19,7 @@ fn async_closure() {
 
 #[test]
 fn stack__closure() {
-    let mut shelf = crate::Shelf::new();
+    let mut shelf = Shelf::new();
     #[yielder_cls(u8)]
     let gen = unsafe {
         Gen::new(&mut shelf, async move || {
