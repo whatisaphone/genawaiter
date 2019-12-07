@@ -174,6 +174,9 @@ mod iterator;
 #[cfg(feature = "futures03")]
 mod stream;
 
+// #[cfg(feature = "genawaiter_proc_macro")]
+pub use genawaiter_proc_macro::{yielder_cls_rc, yielder_fn_rc};
+
 #[cfg(feature = "nightly")]
 #[cfg(test)]
 mod nightly_tests;

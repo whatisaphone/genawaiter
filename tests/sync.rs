@@ -7,9 +7,8 @@
 #![cfg_attr(feature = "strict", deny(warnings))]
 
 use genawaiter::{
-    sync::{Co, Gen},
+    sync::{yielder_fn_sync, yilder_cls_sync, Co, Gen},
     yield_,
-    yielder_fn_sync,
 };
 
 async fn odd_numbers_less_than_ten(co: Co<i32>) {
@@ -42,6 +41,7 @@ fn test_stream() {
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }
 
+#[cfg(feature = "genawaiter_proc_macro")]
 #[test]
 fn sync_proc_macro_fn() {
     #[yielder_fn_sync(u8)]
@@ -51,6 +51,21 @@ fn sync_proc_macro_fn() {
         }
     }
     let gen = Gen::new(odds);
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
+
+#[test]
+fn sync_proc_macro_closure() {
+    let gen = unsafe {
+        Gen::new(yielder_cls_sync! {
+            let mut n = 1_u8;
+            while n < 10 {
+                yield_!(n);
+                n += 2;
+            }
+        })
+    };
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
