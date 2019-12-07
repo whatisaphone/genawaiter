@@ -57,6 +57,28 @@ impl VisitMut for YieldMatchMacro {
         visit_mut::visit_stmt_mut(self, node);
     }
 
+    // fn visit_block_mut(&mut self, node: &mut Block) {
+    //     println!("{:?}\n{:?}", self.collected, node);
+
+    //     let yd_index = node.stmts.iter().(|yd_stmt| {
+    //         println!("{:?}", yd_stmt);
+    //         match yd_stmt {
+    //             Stmt::Item(Item::Macro(m)) => {
+    //                 m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
+    //             }
+    //             _ => false,
+    //         }
+    //     });
+
+    //     if let Some(idx) = yd_index {
+    //         if let Some(mut yld) = self.coll_replace.pop_front() {
+    //             println!("OHOHOHOHOHOHOHOHOH\n\n {:#?}", node);
+    //             node.stmts[idx] = yld;
+    //         }
+    //     }
+    //     visit_mut::visit_block_mut(self, node);
+    // }
+
     fn visit_macro_mut(&mut self, node: &mut Macro) {
         println!("EXPR MAC {:#?}", node);
         println!("EXPR MAC {:#?}", self.parent);
@@ -147,13 +169,27 @@ impl VisitMut for YieldReplace {
 
     fn visit_block_mut(&mut self, node: &mut Block) {
         println!("{:?}\n{:?}", self.collected, node);
-        let coll = self.collected.get(0).unwrap();
-        if coll.as_ref() == node.stmts.get(0) {
+
+        for mut yd_stmt in node.stmts.iter_mut().filter(|yd_stmt| {
+            println!("{:?}", yd_stmt);
+            match yd_stmt {
+                Stmt::Item(Item::Macro(m)) => {
+                    m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
+                }
+                _ => false,
+            }
+        }) {
             if let Some(mut yld) = self.coll_replace.pop_front() {
-                println!("OHOHOHOHOHOHOHOHOH\n\n {:#?}", node);
-                node.stmts[0] = yld;
+                *yd_stmt = yld;
             }
         }
+
+        // if let Some(idx) = yd_index {
+        //     if let Some(mut yld) = self.coll_replace.pop_front() {
+        //         println!("OHOHOHOHOHOHOHOHOH\n\n {:#?}", node);
+        //         node.stmts[idx] = yld;
+        //     }
+        // }
         visit_mut::visit_block_mut(self, node);
     }
 

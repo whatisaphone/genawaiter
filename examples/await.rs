@@ -14,6 +14,7 @@ use genawaiter::{
 async fn odds() {
     for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
         genawaiter::yield_!{n};
+        genawaiter::yield_!{n};
     }
 }
 
