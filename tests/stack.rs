@@ -5,7 +5,7 @@
 
 use genawaiter::{
     generator_mut,
-    stack::{yielder_fn, Co, Gen, Shelf},
+    stack::{Co, Gen, Shelf},
 };
 
 async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {

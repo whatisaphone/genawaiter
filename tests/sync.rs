@@ -1,23 +1,12 @@
 #![cfg_attr(
     feature = "nightly",
-<<<<<<< HEAD
-    feature(async_await, async_closure, proc_macro_hygiene)
-=======
     feature(async_await, async_closure)
->>>>>>> visit
 )]
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-<<<<<<< HEAD
-use genawaiter::{
-    sync::{yielder_fn_sync, yilder_cls_sync, Co, Gen},
-    yield_,
-};
-=======
 use genawaiter::{sync::{Co, Gen}};
->>>>>>> visit
 
 async fn odd_numbers_less_than_ten(co: Co<i32>) {
     for n in (1..).step_by(2).take_while(|&n| n < 10) {
