@@ -1,11 +1,7 @@
 // These tests can't be parsed on non-nightly compilers, so move them to a
 // separate file.
 
-use crate::{
-    ops::GeneratorState,
-    stack::{yielder_cls, Shelf},
-    yield_,
-};
+use crate::{ops::GeneratorState, stack::{Gen, Shelf}};
 
 #[test]
 fn async_closure() {

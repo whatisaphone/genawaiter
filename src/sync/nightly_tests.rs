@@ -3,8 +3,7 @@
 
 use crate::{
     ops::GeneratorState,
-    sync::{yielder_cls_sync, Gen},
-    yield_,
+    sync::Gen,
 };
 
 #[test]

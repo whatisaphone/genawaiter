@@ -1,51 +1,80 @@
 #![feature(async_closure)]
-#![feature(proc_macro_hygiene)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
-#![allow(dead_code)]
+// #![allow(unused_imports)]
+// #![allow(unused_variables)]
+// #![allow(dead_code)]
 
-use genawaiter::{
-    generator_mut,
-    stack::{yielder_cls, yielder_fn, Co, Gen, Shelf},
-    yield_,
-};
+#[cfg(feature = "proc_macro")]
+mod mac {
+    use proc_macro_hack;
+    use genawaiter::{
+        generator_mut,
+        stack::{Co, Gen, Shelf},
+        yield_,
+    };
 
-#[yielder_fn(u8)]
-async fn odds() {
-    for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
-        genawaiter::yield_!{n};
+    #[proc_macro_hack::proc_macro_hack]
+    use genawaiter_proc_macro::stack_yield_cls;
+    use genawaiter_proc_macro::stack_yield_fn;
+
+    #[stack_yield_fn(u8)]
+    async fn odds() {
+        for n in (1..).step_by(2).take_while(|&n| n < 10) {
+            genawaiter::yield_! {n}
+            // this is still `()` but for completeness you can do it.
+            let x = genawaiter::yield_!(n);
+            genawaiter::yield_!(n)
+        }
+    }
+
+    #[stack_yield_fn(u8)]
+    async fn odds2() {
+        yield_!(10)
+    }
+
+    #[stack_yield_fn(u8)]
+    async fn odds3() {
+        for n in (1..).step_by(2).take_while(|&n| n < 10) {
+            if true {
+                yield_!(n)
+            }
+        }
+    }
+
+    pub fn main() {
+        // let closure = stack_yield_fn!(u8 in async move || {
+        //     yield_!(5);
+        // });
+
+        // let hello = stack_yield_fn!(&str in async move || {
+        //     yield_!("");
+        // });
+
+        let mut shelf = Shelf::new();
+        let gen = unsafe {
+            Gen::new(&mut shelf, stack_yield_cls!(
+                u8 in async move || {
+                    let mut n = 1_u8;
+                    while n < 10 {
+                        yield_!(n);
+                        n += 2;
+                        yield_!(n - 1)
+                    }
+                }
+            ))
+        };
+        for x in gen {
+            println!("{}", x);
+        }
+        // let gen = Gen::new(odds);
+
+        generator_mut!(gen, odds);
+
+        for x in gen {
+            println!("{}", x);
+        }
     }
 }
-
 fn main() {
-    // #[yielder_cls(u8)]
-    // let hello = async move |co: Co<'static, u8>| {
-    //     let mut n = 1_u8;
-    //     while n < 10 {
-    //         yield_!(n);
-    //         n += 2;
-    //     }
-    // };
-
-    // let mut shelf = Shelf::new();
-    // #[yielder_cls(u8)]
-    // let gen = unsafe {
-    //     Gen::new(&mut shelf, yielder_cls! {
-    //         let mut n = 1_u8;
-    //         while n < 10 {
-    //             // or without semi-colon
-    //             yield_!(n)
-    //             n += 2;
-    //         }
-    //     })
-    // };
-    // let gen = Gen::new(odds);
-
-    // generator_mut!(test, hello);
-
-    generator_mut!(gen, odds);
-
-    for x in gen {
-        println!("{}", x);
-    }
+    #[cfg(feature = "proc_macro")]
+    mac::main();
 }

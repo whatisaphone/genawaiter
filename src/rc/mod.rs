@@ -14,6 +14,43 @@ let mut generator = Gen::new(producer);
 
 # Examples
 
+## Using 'proc_macro`
+
+A macro attribute can be used for functions [`rc_yield_fn`](macros.rc_yield_fn.html), and a function like
+macro for closures [`rc_yield_cls`](macros.rc_yield_cls.html). These are meant to be used
+with the [`yield_'](macros.yield_.html) macro for easy definition of generators.
+
+```rust
+use genawaiter::{rc::{Gen, rc_yield_fn}, yield_};
+
+#[rc_yield_fn(u8)]
+async fn odds() {
+    for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
+        yield_!(n);
+    }
+}
+# let gen = Gen::new(odds);
+# let res = gen.into_iter().collect::<Vec<_>>();
+# assert_eq!(vec![1, 3, 5, 7, 9], res)
+```
+For closures
+```rust
+#![feature(async_closure)]
+use genawaiter::{rc::Gen, rc_yield_cls, yield_};
+
+let gen = Gen::new(rc_yield_cls!(
+    u8 in async move || {
+        let mut n = 1_u8;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
+        }
+    }
+));
+let res = gen.into_iter().collect::<Vec<_>>();
+assert_eq!(vec![1, 3, 5, 7, 9], res)
+```
+
 ## Using `Iterator`
 
 Generators implement `Iterator`, so you can use them in a for loop:
@@ -164,6 +201,7 @@ assert_eq!(gen.resume(), GeneratorState::Complete("done!"));
 ```
 */
 
+
 pub use engine::Co;
 pub use generator::Gen;
 
@@ -174,8 +212,8 @@ mod iterator;
 #[cfg(feature = "futures03")]
 mod stream;
 
-// #[cfg(feature = "genawaiter_proc_macro")]
-pub use genawaiter_proc_macro::{yielder_cls_rc, yielder_fn_rc};
+#[cfg(feature = "proc_macro")]
+pub use genawaiter_proc_macro::rc_yield_fn;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]

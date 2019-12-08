@@ -185,8 +185,13 @@ mod iterator;
 #[cfg(feature = "futures03")]
 mod stream;
 
-// #[cfg(feature = "genawaiter_proc_macro")]
-pub use genawaiter_proc_macro::{yielder_cls, yielder_fn};
+#[cfg(feature = "proc_macro")]
+use proc_macro_hack::proc_macro_hack;
+#[cfg(feature = "proc_macro")]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::stack_yield_cls;
+#[cfg(feature = "proc_macro")]
+pub use genawaiter_proc_macro::stack_yield_fn;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]

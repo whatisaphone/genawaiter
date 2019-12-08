@@ -1,7 +1,7 @@
 # https://help.github.com/en/actions/automating-your-workflow-with-github-actions
 
 name: CI
-on: push
+on: [push, pull_request]
 
 jobs:
   fmt:

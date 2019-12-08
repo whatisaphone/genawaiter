@@ -41,10 +41,10 @@ fn test_stream() {
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }
 
-// #[cfg(feature = "genawaiter_proc_macro")]
+#[cfg(feature = "proc_macro")]
 #[test]
 fn stack_proc_macro_fn() {
-    #[yielder_fn(u8)]
+    #[genawaiter::stack::stack_yield_fn(u8)]
     async fn odds() {
         for n in (1..).step_by(2).take_while(|&n| n < 10) {
             genawaiter::yield_!(n);

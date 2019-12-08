@@ -192,7 +192,6 @@ assert_eq!(gen.resume(), GeneratorState::Yielded(20));
 assert_eq!(gen.resume(), GeneratorState::Complete("done!"));
 ```
 */
-
 pub use boxed::GenBoxed;
 pub use engine::Co;
 pub use generator::Gen;
@@ -205,8 +204,8 @@ mod iterator;
 #[cfg(feature = "futures03")]
 mod stream;
 
-// #[cfg(feature = "genawaiter_proc_macro")]
-pub use genawaiter_proc_macro::{yielder_cls_sync, yielder_fn_sync};
+#[cfg(feature = "proc_macro")]
+pub use genawaiter_proc_macro::sync_yield_fn;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]
