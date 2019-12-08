@@ -5,12 +5,12 @@
 
 #[cfg(feature = "proc_macro")]
 mod mac {
-    use proc_macro_hack;
     use genawaiter::{
         generator_mut,
         stack::{Co, Gen, Shelf},
         yield_,
     };
+    use proc_macro_hack;
 
     #[proc_macro_hack::proc_macro_hack]
     use genawaiter_proc_macro::stack_yield_cls;
@@ -51,16 +51,19 @@ mod mac {
 
         let mut shelf = Shelf::new();
         let gen = unsafe {
-            Gen::new(&mut shelf, stack_yield_cls!(
-                u8 in async move || {
-                    let mut n = 1_u8;
-                    while n < 10 {
-                        yield_!(n);
-                        n += 2;
-                        yield_!(n - 1)
+            Gen::new(
+                &mut shelf,
+                stack_yield_cls!(
+                    u8 in async move || {
+                        let mut n = 1_u8;
+                        while n < 10 {
+                            yield_!(n);
+                            n += 2;
+                            yield_!(n - 1)
+                        }
                     }
-                }
-            ))
+                ),
+            )
         };
         for x in gen {
             println!("{}", x);

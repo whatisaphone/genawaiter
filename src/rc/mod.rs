@@ -16,10 +16,13 @@ let mut generator = Gen::new(producer);
 
 ## Using 'proc_macro`
 
-A macro attribute can be used for functions [`rc_yield_fn`](macros.rc_yield_fn.html), and a function like
-macro for closures [`rc_yield_cls`](macros.rc_yield_cls.html). These are meant to be used
-with the [`yield_'](macros.yield_.html) macro for easy definition of generators.
-
+A macro attribute can be used for functions `rc_yield_fn`, and a function like macro
+for closures `rc_yield_cls`. These are meant to be used with the `yield_` macro for
+easy definition of generators. The crate must be compiled with the `proc_macro`
+feature for these to be enabled.
+```toml
+syn = {version = "0.2", features = ["proc_macro"] }
+```
 ```rust
 use genawaiter::{rc::{Gen, rc_yield_fn}, yield_};
 
@@ -200,7 +203,6 @@ assert_eq!(gen.resume(), GeneratorState::Yielded(20));
 assert_eq!(gen.resume(), GeneratorState::Complete("done!"));
 ```
 */
-
 
 pub use engine::Co;
 pub use generator::Gen;

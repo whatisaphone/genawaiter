@@ -77,7 +77,6 @@ impl VisitMut for YieldMatchMacro {
     }
 }
 
-
 pub struct YieldReplace {
     pub collected: VecDeque<Option<Stmt>>,
     pub coll_replace: VecDeque<Stmt>,

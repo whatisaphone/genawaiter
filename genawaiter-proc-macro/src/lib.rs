@@ -1,10 +1,9 @@
 extern crate proc_macro;
 
+use proc_macro::TokenStream;
 use proc_macro_error::*;
 use proc_macro_hack::proc_macro_hack;
-use proc_macro::TokenStream;
-use quote::quote;
-use quote::ToTokens;
+use quote::{quote, ToTokens};
 use syn::{self, parse_macro_input, visit_mut::VisitMut, ItemFn, Type};
 
 mod common;
@@ -12,7 +11,7 @@ mod rc;
 mod stack;
 mod sync;
 
-use common::{YieldMatchMacro, YieldReplace, YieldClosure};
+use common::{YieldClosure, YieldMatchMacro, YieldReplace};
 
 #[proc_macro_attribute]
 #[proc_macro_error]
@@ -39,7 +38,7 @@ pub fn stack_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_error]
 pub fn stack_yield_cls(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as YieldClosure);
-    
+
     let mut yield_cls = input.closure;
     let mut ymc = YieldMatchMacro::new();
     ymc.visit_expr_closure_mut(&mut yield_cls);
@@ -47,7 +46,10 @@ pub fn stack_yield_cls(input: TokenStream) -> TokenStream {
     let mut y_replace = YieldReplace::new(ymc);
     y_replace.visit_expr_closure_mut(&mut yield_cls);
 
-    stack::add_coroutine_arg_cls(&mut yield_cls.inputs, input.ty.to_token_stream().to_string());
+    stack::add_coroutine_arg_cls(
+        &mut yield_cls.inputs,
+        input.ty.to_token_stream().to_string(),
+    );
 
     let tokens = quote! { #yield_cls };
     tokens.into()
@@ -78,7 +80,7 @@ pub fn sync_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_error]
 pub fn sync_yield_cls(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as YieldClosure);
-    
+
     let mut yield_cls = input.closure;
     let mut ymc = YieldMatchMacro::new();
     ymc.visit_expr_closure_mut(&mut yield_cls);
@@ -86,7 +88,10 @@ pub fn sync_yield_cls(input: TokenStream) -> TokenStream {
     let mut y_replace = YieldReplace::new(ymc);
     y_replace.visit_expr_closure_mut(&mut yield_cls);
 
-    sync::add_coroutine_arg_cls(&mut yield_cls.inputs, input.ty.to_token_stream().to_string());
+    sync::add_coroutine_arg_cls(
+        &mut yield_cls.inputs,
+        input.ty.to_token_stream().to_string(),
+    );
 
     let tokens = quote! { #yield_cls };
     tokens.into()
@@ -117,7 +122,7 @@ pub fn rc_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_error]
 pub fn rc_yield_cls(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as YieldClosure);
-    
+
     let mut yield_cls = input.closure;
     let mut ymc = YieldMatchMacro::new();
     ymc.visit_expr_closure_mut(&mut yield_cls);
@@ -125,7 +130,10 @@ pub fn rc_yield_cls(input: TokenStream) -> TokenStream {
     let mut y_replace = YieldReplace::new(ymc);
     y_replace.visit_expr_closure_mut(&mut yield_cls);
 
-    rc::add_coroutine_arg_cls(&mut yield_cls.inputs, input.ty.to_token_stream().to_string());
+    rc::add_coroutine_arg_cls(
+        &mut yield_cls.inputs,
+        input.ty.to_token_stream().to_string(),
+    );
 
     let tokens = quote! { #yield_cls };
     tokens.into()

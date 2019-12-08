@@ -6,7 +6,7 @@
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-use genawaiter::{rc::{Co, Gen}};
+use genawaiter::rc::{Co, Gen};
 
 async fn odd_numbers_less_than_ten(co: Co<i32>) {
     for n in (1..).step_by(2).take_while(|&n| n < 10) {
@@ -34,7 +34,6 @@ fn test_stream() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn rc_proc_macro_fn() {
-    
     #[genawaiter::rc::rc_yield_fn(u8)]
     async fn odds() {
         for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {

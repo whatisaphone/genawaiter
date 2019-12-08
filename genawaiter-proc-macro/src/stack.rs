@@ -1,13 +1,5 @@
 use proc_macro_error::abort_call_site;
-use syn::{
-    parse_str,
-    punctuated::Punctuated,
-    token::Comma,
-    FnArg,
-    Ident,
-    Pat,
-    Type,
-};
+use syn::{parse_str, punctuated::Punctuated, token::Comma, FnArg, Ident, Pat, Type};
 
 /// Mutates the input `Punctuated<FnArg, Comma>` to a `co: Co<'_, {type}>` with
 /// lifetime.
