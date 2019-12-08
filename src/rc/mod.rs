@@ -20,10 +20,11 @@ A macro attribute can be used for functions `rc_yield_fn`, and a function like m
 for closures `rc_yield_cls`. These are meant to be used with the `yield_` macro for
 easy definition of generators. The crate must be compiled with the `proc_macro`
 feature for these to be enabled.
+
 ```toml
 syn = {version = "0.2", features = ["proc_macro"] }
 ```
-```rust
+```ignore
 use genawaiter::{rc::{Gen, rc_yield_fn}, yield_};
 
 #[rc_yield_fn(u8)]
@@ -37,10 +38,8 @@ async fn odds() {
 # assert_eq!(vec![1, 3, 5, 7, 9], res)
 ```
 For closures
-```rust
-#![feature(async_closure)]
-use genawaiter::{rc::Gen, rc_yield_cls, yield_};
-
+```ignore
+# use genawaiter::{rc::Gen, rc_yield_cls, yield_};
 let gen = Gen::new(rc_yield_cls!(
     u8 in async move || {
         let mut n = 1_u8;
@@ -50,8 +49,8 @@ let gen = Gen::new(rc_yield_cls!(
         }
     }
 ));
-let res = gen.into_iter().collect::<Vec<_>>();
-assert_eq!(vec![1, 3, 5, 7, 9], res)
+# let res = gen.into_iter().collect::<Vec<_>>();
+# assert_eq!(vec![1, 3, 5, 7, 9], res)
 ```
 
 ## Using `Iterator`

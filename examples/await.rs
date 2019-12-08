@@ -1,10 +1,11 @@
-#![feature(async_closure)]
+
 // #![allow(unused_imports)]
 // #![allow(unused_variables)]
 // #![allow(dead_code)]
 
 #[cfg(feature = "proc_macro")]
 mod mac {
+    #[feature(async_closure)]
     use genawaiter::{
         generator_mut,
         stack::{Co, Gen, Shelf},
