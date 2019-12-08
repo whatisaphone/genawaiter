@@ -1,25 +1,22 @@
 use std::collections::VecDeque;
 
+use proc_macro2::TokenStream as TokenStream2;
 use proc_macro_error::abort;
 use quote::quote;
 use syn::{
+    parse::{Parse, ParseStream},
     parse2,
     spanned::Spanned,
     visit_mut::{self, VisitMut},
     Block,
     Expr,
-    ExprMacro,
-    ForeignItemMacro,
-    Ident,
-    ImplItemMacro,
+    ExprClosure,
     Item,
-    ItemMacro,
-    ItemMacro2,
-    PatMacro,
     Macro,
+    Result as SynResult,
     Stmt,
-    TraitItemMacro,
-    TypeMacro,
+    Token,
+    Type,
 };
 
 pub struct YieldMatchMacro {
@@ -30,67 +27,47 @@ pub struct YieldMatchMacro {
 
 impl YieldMatchMacro {
     pub fn new() -> Self {
-        Self { parent: None, collected: vec![], coll_replace: vec![], }
+        Self {
+            parent: None,
+            collected: vec![],
+            coll_replace: vec![],
+        }
     }
 }
 
 impl VisitMut for YieldMatchMacro {
     fn visit_stmt_mut(&mut self, node: &mut Stmt) {
         match node {
-            Stmt::Local(l) => {
+            Stmt::Local(_local) => {
                 self.parent = Some(node.clone());
-                println!("LOCAL")
-            },
-            Stmt::Item(item) => {
+            }
+            Stmt::Item(_item) => {
                 self.parent = Some(node.clone());
-                println!("ITEM")
-            },
-            Stmt::Expr(expr) => {
+            }
+            Stmt::Expr(_expr) => {
                 self.parent = Some(node.clone());
-                println!("EXPR")
-            },
-            Stmt::Semi(expr, _semi) => {
+            }
+            Stmt::Semi(_expr, _semi) => {
                 self.parent = Some(node.clone());
-                println!("SEMI")
-            },
+            }
         }
         visit_mut::visit_stmt_mut(self, node);
     }
 
-    // fn visit_block_mut(&mut self, node: &mut Block) {
-    //     println!("{:?}\n{:?}", self.collected, node);
-
-    //     let yd_index = node.stmts.iter().(|yd_stmt| {
-    //         println!("{:?}", yd_stmt);
-    //         match yd_stmt {
-    //             Stmt::Item(Item::Macro(m)) => {
-    //                 m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
-    //             }
-    //             _ => false,
-    //         }
-    //     });
-
-    //     if let Some(idx) = yd_index {
-    //         if let Some(mut yld) = self.coll_replace.pop_front() {
-    //             println!("OHOHOHOHOHOHOHOHOH\n\n {:#?}", node);
-    //             node.stmts[idx] = yld;
-    //         }
-    //     }
-    //     visit_mut::visit_block_mut(self, node);
-    // }
-
     fn visit_macro_mut(&mut self, node: &mut Macro) {
-        println!("EXPR MAC {:#?}", node);
-        println!("EXPR MAC {:#?}", self.parent);
         let yield_found = node.path.segments.iter().any(|seg| seg.ident == "yield_");
 
         if yield_found && self.parent.is_some() {
-            let ex: Ident = syn::parse2(node.tokens.clone()).expect("parse of Ident failed");
+            // this accepts any valid rust tokens allows Idents/Literals/Macros ect.
+            let ex: TokenStream2 =
+                syn::parse2(node.tokens.clone()).expect("parse of TokensStream failed");
             let ident = quote! { #ex };
-
             let co_call = quote! { co.yield_(#ident).await; };
             let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
+
             self.coll_replace.push(cc);
+            // we use this as a flag for YieldReplace to check and compare the collected
+            // Stmt to the Stmt that YieldReplace is currently visiting.
             self.collected.push(self.parent.take())
         } else {
             self.collected.push(None)
@@ -99,6 +76,7 @@ impl VisitMut for YieldMatchMacro {
         visit_mut::visit_macro_mut(self, node);
     }
 }
+
 
 pub struct YieldReplace {
     pub collected: VecDeque<Option<Stmt>>,
@@ -109,239 +87,126 @@ impl YieldReplace {
     pub fn new(found: YieldMatchMacro) -> Self {
         Self {
             collected: found.collected.into_iter().collect(),
-            coll_replace: found.coll_replace.into_iter().collect(), 
+            coll_replace: found.coll_replace.into_iter().collect(),
         }
     }
 }
 
 impl VisitMut for YieldReplace {
-    fn visit_stmt_mut(&mut self, mut node: &mut Stmt) {
+    fn visit_stmt_mut(&mut self, node: &mut Stmt) {
         match node {
-            Stmt::Local(l) => {
-                if self.collected.get(0).is_some() {
-                    self.collected.pop_front();
-                    println!("OHOHOHOHOHOHOHOHOH");
-                } else {
+            Stmt::Local(_local) => {
+                if let Some(&None) = self.collected.get(0) {
                     self.collected.pop_front();
                 }
-                
-                println!("LOCAL")
-            },
-            Stmt::Item(item) => {
-                if let Some(&Some(_)) = self.collected.get(0) {
-                    // self.collected.pop_front();
-                    // if let Some(mut yld) = self.coll_replace.pop_front() {
-                    //     println!("OHOHOHOHOHOHOHOHOH\n\n {:#?}", node);
-                    //     *node = yld;
-                    // }
-                    println!("OHOHOHOHOHOHOHOHOH");
-                } else {
+            }
+            Stmt::Item(_item) => {
+                if let Some(&None) = self.collected.get(0) {
                     self.collected.pop_front();
                 }
-                println!("ITEM")
-            },
-            Stmt::Expr(expr) => {
-                if let Some(&Some(_)) = self.collected.get(0) {
-
-                    // self.collected.pop_front();
-                    // if let Some(mut yld) = self.coll_replace.pop_front() {
-                    //     println!("OHOHOHOHOHOHOHOHOH\n\n {:#?}", node);
-                    //     *node = yld;
-                    // }
-                    println!("OHOHOHOHOHOHOHOHOH\n\n{:#?}",self.coll_replace);
-                } else {
+            }
+            Stmt::Expr(_expr) => {
+                if let Some(&None) = self.collected.get(0) {
                     self.collected.pop_front();
                 }
-                println!("EXPR")
-            },
-            Stmt::Semi(expr, _semi) => {
-                if self.collected.get(0).is_some() {
-                    self.collected.pop_front();
-                    println!("OHOHOHOHOHOHOHOHOH");
-                } else {
+            }
+            Stmt::Semi(_expr, _semi) => {
+                if let Some(&None) = self.collected.get(0) {
                     self.collected.pop_front();
                 }
-                println!("SEMI")
-            },
+            }
         }
         visit_mut::visit_stmt_mut(self, node);
     }
 
     fn visit_block_mut(&mut self, node: &mut Block) {
-        println!("{:?}\n{:?}", self.collected, node);
-
-        for mut yd_stmt in node.stmts.iter_mut().filter(|yd_stmt| {
-            println!("{:?}", yd_stmt);
+        for yd_stmt in node.stmts.iter_mut().filter(|yd_stmt| {
             match yd_stmt {
                 Stmt::Item(Item::Macro(m)) => {
                     m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
                 }
+                Stmt::Expr(Expr::Macro(m)) => {
+                    m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
+                }
+                Stmt::Semi(Expr::Macro(m), _) => {
+                    m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
+                }
+                Stmt::Local(box_loc) => {
+                    if let Some(local) = &box_loc.init {
+                        match &*local.1 {
+                            Expr::Macro(m) => {
+                                m.mac
+                                    .path
+                                    .segments
+                                    .iter()
+                                    .any(|seg| seg.ident == "yield_")
+                            }
+                            _ => false,
+                        }
+                    } else {
+                        false
+                    }
+                }
                 _ => false,
             }
         }) {
-            if let Some(mut yld) = self.coll_replace.pop_front() {
-                *yd_stmt = yld;
+            if let Some(yld) = self.coll_replace.pop_front() {
+                match yd_stmt {
+                    // for assignment `let foo = yield_!(55);`
+                    Stmt::Local(box_loc) => {
+                        if let Some(local) = &mut box_loc.init {
+                            match &mut *local.1 {
+                                Expr::Macro(_macro) => {
+                                    match yld {
+                                        Stmt::Expr(inner) => *local.1 = inner,
+                                        Stmt::Item(_inner) => {
+                                            abort!(
+                                                box_loc.span(),
+                                                "`{}` is not a valid assignment"
+                                            )
+                                        }
+                                        Stmt::Local(_inner) => {
+                                            abort!(
+                                                box_loc.span(),
+                                                "`{}` is not a valid assignment"
+                                            )
+                                        }
+                                        Stmt::Semi(inner, _) => *local.1 = inner,
+                                    }
+                                }
+                                _ => panic!("bug macro found then lost"),
+                            }
+                        } else {
+                            panic!("bug macro found then lost")
+                        }
+                    }
+                    _ => {
+                        *yd_stmt = yld;
+                    }
+                }
             }
         }
 
-        // if let Some(idx) = yd_index {
-        //     if let Some(mut yld) = self.coll_replace.pop_front() {
-        //         println!("OHOHOHOHOHOHOHOHOH\n\n {:#?}", node);
-        //         node.stmts[idx] = yld;
-        //     }
-        // }
         visit_mut::visit_block_mut(self, node);
     }
-
-    fn visit_macro_mut(&mut self, node: &mut Macro) {
-        // println!("EXPR MAC {:#?}", node);
-        // println!("EXPR MAC {:#?}", self.coll_replace);
-        // let yield_found = node.path.segments.iter().any(|seg| seg.ident == "yield_");
-
-        // if yield_found && self.parent.is_some() {
-        //     let ex: Ident = syn::parse2(node.tokens.clone()).expect("");
-        //     let ident = quote! { #ex };
-
-        //     let co_call = quote! { co.yield_(#ident).await; };
-        //     let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
-        //     self.coll_replace.push(cc);
-        //     self.collected.push(self.parent.take().unwrap())
-        // }
-
-        visit_mut::visit_macro_mut(self, node);
-    }
 }
 
-/// Replaces all `yeild_!{ expression }` with `co.yield_(#ident).await;` for
-/// closures.
-pub(crate) fn replace_yield_cls(body: &mut Expr) {
-    match body {
-        Expr::Block(block) => {
-            let mut stmts = &mut block.block.stmts;
-            parse_block_stmts(&mut stmts);
-        }
-        Expr::Async(block) => {
-            let mut stmts = &mut block.block.stmts;
-            parse_block_stmts(&mut stmts);
-        }
-        _ => {}
-    }
+#[derive(Debug)]
+pub struct YieldClosure {
+    pub ty: Type,
+    pub closure: ExprClosure,
 }
 
-/// Replaces all `yield_!{ expression }` with `co.yield_(#ident).await;`.
-pub(crate) fn parse_block_stmts(stmts: &mut [Stmt]) {
-    for stmt in stmts.iter_mut() {
-        match stmt {
-            Stmt::Expr(Expr::ForLoop(loopy)) => {
-                let loop_stmts = &mut loopy.body.stmts;
-                let yield_idx = loop_stmts.iter().position(|loop_stmt| {
-                    println!("{:?}", loop_stmts);
-                    match loop_stmt {
-                        Stmt::Item(Item::Macro(m)) => {
-                            println!("{:?}", m);
-                            m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
-                        }
-                        _ => false,
-                    }
-                });
-                if let Some(idx) = yield_idx {
-                    let ident = match loop_stmts.get(idx) {
-                        Some(Stmt::Item(Item::Macro(yd_expr))) => {
-                            let ex: Ident =
-                                syn::parse2(yd_expr.mac.tokens.clone()).expect("");
-                            quote! { #ex }
-                        }
-                        _ => panic!("bug found index of yield in stmts but no yield"),
-                    };
-                    let co_call = quote! { co.yield_(#ident).await; };
-                    let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
-                    loop_stmts.remove(idx);
-                    loop_stmts.insert(idx, cc);
-                }
-            }
-            Stmt::Expr(Expr::While(loopy)) => {
-                let loop_stmts = &mut loopy.body.stmts;
-                let yield_idx = loop_stmts.iter().position(|loop_stmt| {
-                    match loop_stmt {
-                        Stmt::Item(Item::Macro(m)) => {
-                            if let Some(id) = m.mac.path.get_ident() {
-                                println!("{:?}", m);
-                                id == "yield_"
-                            } else {
-                                false
-                            }
-                        }
-                        _ => false,
-                    }
-                });
-                if let Some(idx) = yield_idx {
-                    let ident = match loop_stmts.get(idx) {
-                        Some(Stmt::Item(Item::Macro(yd_expr))) => {
-                            let ex: Ident =
-                                syn::parse2(yd_expr.mac.tokens.clone()).expect("");
-                            quote! { #ex }
-                        }
-                        _ => panic!("bug found index of yield in stmts but no yield"),
-                    };
-                    let co_call = quote! { co.yield_(#ident).await; };
-                    let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
-                    loop_stmts.remove(idx);
-                    loop_stmts.insert(idx, cc);
-                }
-            }
-            Stmt::Item(Item::Macro(m)) => {
-                if let Some(id) = m.mac.path.get_ident() {
-                    if id == "yield_" {
-                        let ex: Ident = syn::parse2(m.mac.tokens.clone())
-                            .or_else::<(), _>(|e| {
-                                abort!(
-                                    m.span(),
-                                    format!("must yield explicit `()` {}", e)
-                                )
-                            })
-                            .unwrap();
-                        let co_call = quote! { co.yield_(#ex).await; };
-                        let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
-                        std::mem::replace(stmt, cc);
-                    }
-                } else {
-                    abort!(m.span(), "must yield explicit `()`")
-                }
-            }
-            _ => continue,
+impl Parse for YieldClosure {
+    fn parse(input: ParseStream) -> SynResult<Self> {
+        let ty = input.parse::<Type>()?;
+        if input.parse::<Token![in]>().is_ok() {
+            Ok(YieldClosure {
+                ty,
+                closure: input.parse()?,
+            })
+        } else {
+            panic!("use `in` keyword ex. 'yield_cls!{ u8 in || yield!(10) }'")
         }
     }
 }
-
-// fn visit_item_macro_mut(&mut self, node: &mut ItemMacro) {
-//     println!("ITEM MAC");
-//     visit_mut::visit_item_macro_mut(self, node);
-// }
-
-// fn visit_item_macro2_mut(&mut self, node: &mut ItemMacro2) {
-//     println!("ITEM MAC2");
-//     visit_mut::visit_item_macro2_mut(self, node);
-// }
-
-// fn visit_pat_macro_mut(&mut self, node: &mut PatMacro) {
-//     println!("PAT MAC");
-//     visit_mut::visit_pat_macro_mut(self, node);
-// }
-// fn visit_trait_item_macro_mut(&mut self, node: &mut TraitItemMacro) {
-//     println!("TRAIT MAC");
-//     visit_mut::visit_trait_item_macro_mut(self, node);
-// }
-// fn visit_type_macro_mut(&mut self, node: &mut TypeMacro) {
-//     println!("TYPE MAC");
-//     visit_mut::visit_type_macro_mut(self, node);
-// }
-
-// fn visit_foreign_item_macro_mut(&mut self, node: &mut ForeignItemMacro) {
-//     println!("FOREIGN MAC");
-//     visit_mut::visit_foreign_item_macro_mut(self, node);
-// }
-
-// fn visit_impl_item_macro_mut(&mut self, node: &mut ImplItemMacro) {
-//     println!("IMPL MAC");
-//     visit_mut::visit_impl_item_macro_mut(self, node);
-// }

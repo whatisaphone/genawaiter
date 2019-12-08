@@ -12,37 +12,54 @@ use genawaiter::{
 
 #[yielder_fn(u8)]
 async fn odds() {
-    for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
-        genawaiter::yield_!{n};
-        genawaiter::yield_!{n};
+    for n in (1..).step_by(2).take_while(|&n| n < 10) {
+        genawaiter::yield_! {n}
+        // this is still `()` but for completeness you can do it.
+        let x = genawaiter::yield_!(n);
+        genawaiter::yield_!(n)
+    }
+}
+
+#[yielder_fn(u8)]
+async fn odds2() {
+    yield_!(10)
+}
+
+#[yielder_fn(u8)]
+async fn odds3() {
+    for n in (1..).step_by(2).take_while(|&n| n < 10) {
+        if true {
+            yield_!(n)
+        }
     }
 }
 
 fn main() {
-    // #[yielder_cls(u8)]
-    // let hello = async move |co: Co<'static, u8>| {
-    //     let mut n = 1_u8;
-    //     while n < 10 {
-    //         yield_!(n);
-    //         n += 2;
-    //     }
-    // };
+    // let closure = yielder_cls!(u8 in async move || {
+    //     yield_!(5);
+    // });
 
-    // let mut shelf = Shelf::new();
-    // #[yielder_cls(u8)]
-    // let gen = unsafe {
-    //     Gen::new(&mut shelf, yielder_cls! {
-    //         let mut n = 1_u8;
-    //         while n < 10 {
-    //             // or without semi-colon
-    //             yield_!(n)
-    //             n += 2;
-    //         }
-    //     })
-    // };
+    // let hello = yielder_cls!(&str in async move || {
+    //     yield_!("");
+    // });
+
+    let mut shelf = Shelf::new();
+    let gen = unsafe {
+        Gen::new(&mut shelf, yielder_cls!(
+            u8 in async move || {
+                let mut n = 1_u8;
+                while n < 10 {
+                    yield_!(n);
+                    n += 2;
+                    yield_!(n - 1)
+                }
+            }
+        ))
+    };
+    for x in gen {
+        println!("{}", x);
+    }
     // let gen = Gen::new(odds);
-
-    // generator_mut!(test, hello);
 
     generator_mut!(gen, odds);
 
