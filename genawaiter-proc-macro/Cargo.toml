@@ -1,5 +1,5 @@
 [package]
-name = "genawaiter_proc_macro"
+name = "genawaiter-proc-macro"
 version = "0.0.0"
 authors = ["Devin R <devin.ragotzy@gmail.com>"]
 description = "procedural macro for generators (genawaiter)"
@@ -25,3 +25,4 @@ syn = {version = "1.0", features = [
     "clone-impls"
 ] }
 proc-macro-error = "0.4"
+proc-macro-hack = "0.5"

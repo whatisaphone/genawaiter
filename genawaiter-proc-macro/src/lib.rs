@@ -1,7 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro_error::*;
-
+use proc_macro_hack::proc_macro_hack;
 use proc_macro::TokenStream;
 use quote::quote;
 use quote::ToTokens;
@@ -16,7 +16,7 @@ use common::{YieldMatchMacro, YieldReplace, YieldClosure};
 
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn yielder_fn(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn stack_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     let a = args.clone();
     // make sure it is a valid type
     let _ = parse_macro_input!(a as Type);
@@ -35,9 +35,9 @@ pub fn yielder_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-#[proc_macro]
+#[proc_macro_hack]
 #[proc_macro_error]
-pub fn yielder_cls(input: TokenStream) -> TokenStream {
+pub fn stack_yield_cls(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as YieldClosure);
     
     let mut yield_cls = input.closure;
@@ -55,7 +55,7 @@ pub fn yielder_cls(input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn yielder_fn_sync(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn sync_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     let a = args.clone();
     // make sure it is a valid type
     let _ = parse_macro_input!(a as Type);
@@ -74,9 +74,9 @@ pub fn yielder_fn_sync(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-#[proc_macro]
+#[proc_macro_hack]
 #[proc_macro_error]
-pub fn yielder_cls_sync(input: TokenStream) -> TokenStream {
+pub fn sync_yield_cls(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as YieldClosure);
     
     let mut yield_cls = input.closure;
@@ -94,7 +94,7 @@ pub fn yielder_cls_sync(input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn yielder_fn_rc(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn rc_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     let a = args.clone();
     // make sure it is a valid type
     let _ = parse_macro_input!(a as Type);
@@ -113,9 +113,9 @@ pub fn yielder_fn_rc(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-#[proc_macro]
+#[proc_macro_hack]
 #[proc_macro_error]
-pub fn yielder_cls_rc(input: TokenStream) -> TokenStream {
+pub fn rc_yield_cls(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as YieldClosure);
     
     let mut yield_cls = input.closure;

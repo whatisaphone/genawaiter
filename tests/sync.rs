@@ -1,15 +1,12 @@
 #![cfg_attr(
     feature = "nightly",
-    feature(async_await, async_closure, proc_macro_hygiene)
+    feature(async_await, async_closure)
 )]
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-use genawaiter::{
-    sync::{yielder_fn_sync, yilder_cls_sync, Co, Gen},
-    yield_,
-};
+use genawaiter::{sync::{Co, Gen}};
 
 async fn odd_numbers_less_than_ten(co: Co<i32>) {
     for n in (1..).step_by(2).take_while(|&n| n < 10) {
@@ -41,13 +38,13 @@ fn test_stream() {
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }
 
-#[cfg(feature = "genawaiter_proc_macro")]
+#[cfg(feature = "proc_macro")]
 #[test]
 fn sync_proc_macro_fn() {
-    #[yielder_fn_sync(u8)]
+    #[genawaiter::sync::sync_yield_fn(u8)]
     async fn odds() {
         for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
-            yield_! { n };
+            genawaiter::yield_!(n);
         }
     }
     let gen = Gen::new(odds);
@@ -55,17 +52,20 @@ fn sync_proc_macro_fn() {
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
 
+#[cfg(feature = "proc_macro")]
 #[test]
 fn sync_proc_macro_closure() {
-    let gen = unsafe {
-        Gen::new(yielder_cls_sync! {
+    use genawaiter::sync_yield_cls;
+
+    let gen = Gen::new(sync_yield_cls!(
+        u8 in async move || {
             let mut n = 1_u8;
             while n < 10 {
-                yield_!(n);
+                genawaiter::yield_!(n);
                 n += 2;
             }
-        })
-    };
+        }
+    ));
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }

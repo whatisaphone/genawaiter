@@ -227,6 +227,17 @@ pub mod sync;
 mod testing;
 mod waker;
 
+#[cfg(feature = "proc_macro")]
+use proc_macro_hack::proc_macro_hack;
+#[cfg(feature = "proc_macro")]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::sync_yield_cls;
+
+#[cfg(feature = "proc_macro")]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::rc_yield_cls;
+
+#[cfg(feature = "proc_macro")]
 #[macro_export]
 /// This macro is used to replace the keyword yield to
 /// avoid using nightly features when using any of the three
@@ -234,9 +245,9 @@ mod waker;
 ///
 /// # Example
 /// ```
-/// use genawaiter::{stack::yielder_fn, yield_};
+/// use genawaiter::{stack::stack_yield_fn, yield_};
 ///
-/// #[yielder_fn(u8)]
+/// #[stack_yield_fn(u8)]
 /// async fn odds() {
 ///     for n in (1..).step_by(2).take_while(|n| *n < 10) {
 ///         yield_!(n)
