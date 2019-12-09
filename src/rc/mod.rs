@@ -14,7 +14,7 @@ let mut generator = Gen::new(producer);
 
 # Examples
 
-## Using 'proc_macro`
+## Using `proc_macro`
 
 A macro attribute can be used for functions `rc_yield_fn`, and a function like macro
 for closures `rc_yield_cls`. These are meant to be used with the `yield_` macro for

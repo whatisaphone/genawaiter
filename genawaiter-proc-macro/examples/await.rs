@@ -1,8 +1,6 @@
-// #![allow(unused_imports)]
-// #![allow(unused_variables)]
-// #![allow(dead_code)]
+// Remove to test otherwise CI fails because of the async closures
+#[cfg(feature = "proc_macro_example")]
 
-#[cfg(feature = "proc_macro")]
 mod mac {
     #[feature(async_closure)]
     use genawaiter::{
@@ -78,6 +76,6 @@ mod mac {
     }
 }
 fn main() {
-    #[cfg(feature = "proc_macro")]
+    #[cfg(feature = "proc_macro_example")]
     mac::main();
 }

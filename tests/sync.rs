@@ -50,6 +50,7 @@ fn sync_proc_macro_fn() {
 }
 
 #[cfg(feature = "proc_macro")]
+#[cfg(feature = "nightly")]
 #[test]
 fn sync_proc_macro_closure() {
     use genawaiter::sync_yield_cls;

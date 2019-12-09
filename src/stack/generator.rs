@@ -64,9 +64,10 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     ///
     /// # Safety
     ///
-    /// Do not let the `Co` object escape the scope of the generator. By time
-    /// the generator completes, the `Co` object should already have been
-    /// dropped. If this invariant is not upheld, memory unsafety will result.
+    /// Do not let the `Co` object escape the scope of the generator. By the
+    /// time the generator completes, the `Co` object should already have
+    /// been dropped. If this invariant is not upheld, memory unsafety will
+    /// result.
     ///
     /// Afaik, the Rust compiler [is not flexible enough][hrtb-thread] to let
     /// you express this invariant in the type system, but I would love to be

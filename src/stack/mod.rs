@@ -185,13 +185,10 @@ mod iterator;
 #[cfg(feature = "futures03")]
 mod stream;
 
-#[cfg(feature = "proc_macro")]
-#[proc_macro_hack]
-pub use genawaiter_proc_macro::stack_yield_cls;
+/// Function like `proc_macro` to easily and safely create generators from
+/// functions.
 #[cfg(feature = "proc_macro")]
 pub use genawaiter_proc_macro::stack_yield_fn;
-#[cfg(feature = "proc_macro")]
-use proc_macro_hack::proc_macro_hack;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]

@@ -205,7 +205,7 @@ impl Parse for YieldClosure {
                 closure: input.parse()?,
             })
         } else {
-            panic!("use `in` keyword ex. 'yield_cls!{ u8 in || yield!(10) }'")
+            Err(input.error("use `in` keyword ex. 'yield_cls!{ u8 in || yield!(10) }'"))
         }
     }
 }

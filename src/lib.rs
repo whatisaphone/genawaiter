@@ -228,17 +228,26 @@ mod testing;
 mod waker;
 
 #[cfg(feature = "proc_macro")]
-#[proc_macro_hack]
-pub use genawaiter_proc_macro::sync_yield_cls;
-#[cfg(feature = "proc_macro")]
 use proc_macro_hack::proc_macro_hack;
 
+/// Attribute `proc_macro` to easily and safely create generators from
+/// functions that are `Sync`.
+#[cfg(feature = "proc_macro")]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::sync_yield_cls;
+
+/// Function like `proc_macro` to easily and safely create generators from
+/// closures that are `Sync`.
 #[cfg(feature = "proc_macro")]
 #[proc_macro_hack]
 pub use genawaiter_proc_macro::rc_yield_cls;
 
+/// Function like `proc_macro` to easily and safely create generators from
+/// closures on the stack.
 #[cfg(feature = "proc_macro")]
-#[macro_export]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::stack_yield_cls;
+
 /// This macro is used to replace the keyword yield to
 /// avoid using nightly features when using any of the three
 /// `proc_macro_attributes` for easy generator definition.
@@ -254,6 +263,8 @@ pub use genawaiter_proc_macro::rc_yield_cls;
 ///     }
 /// }
 /// ```
+#[cfg(feature = "proc_macro")]
+#[macro_export]
 macro_rules! yield_ {
     ($val:tt) => {
         compile_error!("forgot to use attribute")

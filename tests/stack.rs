@@ -54,3 +54,29 @@ fn stack_proc_macro_fn() {
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
+
+#[cfg(feature = "proc_macro")]
+#[cfg(feature = "nightly")]
+#[test]
+fn sync_proc_macro_closure() {
+    use genawaiter::stack_yield_cls;
+
+    let mut shelf = ::genawaiter::stack::Shelf::new();
+    let gen = unsafe {
+        Gen::new(
+            &mut shelf,
+            stack_yield_cls!(
+                u8 in async move || {
+                    let mut n = 1_u8;
+                    while n < 10 {
+                        genawaiter::yield_!(n);
+                        n += 2;
+                        genawaiter::yield_!(n - 1);
+                    }
+                }
+            ),
+        )
+    };
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], res)
+}
