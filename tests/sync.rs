@@ -67,3 +67,17 @@ fn sync_proc_macro_closure() {
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn sync_proc_macro_fn_method_call() {
+    #[genawaiter::sync::sync_yield_fn(u8)]
+    async fn odds() {
+        for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
+            let _cloned_resume_arg = genawaiter::yield_!(n).clone();
+        }
+    }
+    let gen = genawaiter::sync::Gen::new(odds);
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}

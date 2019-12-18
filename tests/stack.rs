@@ -56,22 +56,40 @@ fn stack_proc_macro_fn() {
 }
 
 #[cfg(feature = "proc_macro")]
+#[test]
+fn stack_yield_a_func_call() {
+    fn pass_thru(n: u8) -> u8 {
+        n
+    }
+
+    #[genawaiter::stack::stack_yield_fn(u8)]
+    async fn odds() {
+        for n in (1..).step_by(2).take_while(|&n| n < 10) {
+            if true {
+                genawaiter::yield_!(pass_thru(n))
+            }
+        }
+    }
+    genawaiter::generator_mut!(gen, odds);
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
+
+#[cfg(feature = "proc_macro")]
 #[cfg(feature = "nightly")]
 #[test]
-fn sync_proc_macro_closure() {
-    use genawaiter::stack_yield_cls;
-
-    let mut shelf = ::genawaiter::stack::Shelf::new();
+fn stack_yield_closure() {
+    let mut shelf = genawaiter::stack::Shelf::new();
     let gen = unsafe {
-        Gen::new(
+        genawaiter::stack::Gen::new(
             &mut shelf,
-            stack_yield_cls!(
+            genawaiter::stack_yield_cls!(
                 u8 in async move || {
                     let mut n = 1_u8;
                     while n < 10 {
                         genawaiter::yield_!(n);
                         n += 2;
-                        genawaiter::yield_!(n - 1);
+                        let _ = yield_!(n - 1).clone();
                     }
                 }
             ),

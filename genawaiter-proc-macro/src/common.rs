@@ -8,6 +8,7 @@ use syn::{
     parse2,
     spanned::Spanned,
     visit_mut::{self, VisitMut},
+    visit::{self, Visit},
     Block,
     Expr,
     ExprClosure,
@@ -21,22 +22,32 @@ use syn::{
 
 pub struct YieldMatchMacro {
     pub parent: Option<Stmt>,
-    pub collected: Vec<Option<Stmt>>,
-    pub coll_replace: Vec<Stmt>,
+    pub fnd_stmts: Vec<Option<Stmt>>,
+    pub stmt_rep: Vec<Stmt>,
+    pub fnd_exprs: Vec<Option<Expr>>,
+    pub keep_exprs: Vec<Option<Expr>>,
+    pub expr_rep: Vec<Expr>,
 }
 
 impl YieldMatchMacro {
     pub fn new() -> Self {
         Self {
             parent: None,
-            collected: vec![],
-            coll_replace: vec![],
+            fnd_stmts: vec![],
+            stmt_rep: vec![],
+            fnd_exprs: vec![],
+            keep_exprs: vec![],
+            expr_rep: vec![],
         }
     }
 }
 
-impl VisitMut for YieldMatchMacro {
-    fn visit_stmt_mut(&mut self, node: &mut Stmt) {
+impl Visit<'_> for YieldMatchMacro {
+    fn visit_expr(&mut self, expr: &Expr) {
+        self.fnd_exprs.push(Some(expr.clone()));
+        visit::visit_expr(self, expr);
+    }
+    fn visit_stmt(&mut self, node: &Stmt) {
         match node {
             Stmt::Local(_local) => {
                 self.parent = Some(node.clone());
@@ -51,67 +62,114 @@ impl VisitMut for YieldMatchMacro {
                 self.parent = Some(node.clone());
             }
         }
-        visit_mut::visit_stmt_mut(self, node);
+        visit::visit_stmt(self, node);
     }
 
-    fn visit_macro_mut(&mut self, node: &mut Macro) {
+    fn visit_macro(&mut self, node: &Macro) {
         let yield_found = node.path.segments.iter().any(|seg| seg.ident == "yield_");
 
         if yield_found && self.parent.is_some() {
             // this accepts any valid rust tokens allows Idents/Literals/Macros ect.
-            let ex: TokenStream2 =
+            let tkns: TokenStream2 =
                 syn::parse2(node.tokens.clone()).expect("parse of TokensStream failed");
-            let ident = quote! { #ex };
+            let ident = quote! { #tkns };
             let co_call = quote! { co.yield_(#ident).await; };
             let cc: Stmt = parse2(co_call).expect("parse of Stmt failed");
 
-            self.coll_replace.push(cc);
+            self.stmt_rep.push(cc);
             // we use this as a flag for YieldReplace to check and compare the collected
             // Stmt to the Stmt that YieldReplace is currently visiting.
-            self.collected.push(self.parent.take())
+            self.fnd_stmts.push(self.parent.take())
         } else {
-            self.collected.push(None)
+            self.fnd_stmts.push(None)
         }
 
-        visit_mut::visit_macro_mut(self, node);
+        if let Some(&Some(Expr::Macro(mac))) = self.fnd_exprs.last().as_ref() {
+            if mac.mac.path.segments.iter().any(|seg| seg.ident == "yield_") {
+                println!("POP");
+
+                let _ = self.fnd_exprs.pop();
+
+                let tkns: TokenStream2 =
+                    syn::parse2(node.tokens.clone()).expect("parse of TokensStream failed");
+                let ident = quote! { #tkns };
+                let co_call = quote! { co.yield_(#ident).await };
+                let cc: Expr = parse2(co_call).expect("parse of Expr failed");
+                
+                if let Some(Some(Expr::MethodCall(mut call))) = self.fnd_exprs.pop() {
+                    self.keep_exprs.push(Some(Expr::MethodCall(call.clone())));
+                    call.receiver = Box::new(cc);
+                    println!("CALLLLL {:#?}", call);
+                    self.expr_rep.push(Expr::MethodCall(call));
+                }
+            } else {
+                self.keep_exprs.push(None);
+            }
+        } else {
+            self.keep_exprs.push(None);
+        }
+
+        visit::visit_macro(self, node);
     }
 }
 
 pub struct YieldReplace {
-    pub collected: VecDeque<Option<Stmt>>,
-    pub coll_replace: VecDeque<Stmt>,
+    pub fnd_stmts: VecDeque<Option<Stmt>>,
+    pub stmt_rep: VecDeque<Stmt>,
+    pub fnd_expr: VecDeque<Option<Expr>>,
+    pub expr_rep: VecDeque<Expr>,
 }
 
 impl YieldReplace {
     pub fn new(found: YieldMatchMacro) -> Self {
         Self {
-            collected: found.collected.into_iter().collect(),
-            coll_replace: found.coll_replace.into_iter().collect(),
+            fnd_stmts: found.fnd_stmts.into_iter().collect(),
+            stmt_rep: found.stmt_rep.into_iter().collect(),
+            fnd_expr: found.keep_exprs.into_iter().collect(),
+            expr_rep: found.expr_rep.into_iter().collect(),
         }
     }
 }
 
 impl VisitMut for YieldReplace {
+    fn visit_expr_mut(&mut self, expr: &mut Expr) {
+        if let Some(&None) = self.fnd_stmts.get(0) {
+            self.fnd_stmts.pop_front();
+        }
+
+        if let Some(&None) = self.fnd_expr.get(0) {
+            self.fnd_expr.pop_front();
+        } else if let Some(&Some(old)) = self.fnd_expr.get(0).as_ref() {
+            if old == expr {
+                println!("{:?}\n{:#?}", self.expr_rep, expr);
+                if let Some(new_expr) = self.expr_rep.remove(0) {
+                    *expr = new_expr;
+                }
+            }
+        }
+
+        visit_mut::visit_expr_mut(self, expr);
+    }
     fn visit_stmt_mut(&mut self, node: &mut Stmt) {
         match node {
             Stmt::Local(_local) => {
-                if let Some(&None) = self.collected.get(0) {
-                    self.collected.pop_front();
+                if let Some(&None) = self.fnd_stmts.get(0) {
+                    self.fnd_stmts.pop_front();
                 }
             }
             Stmt::Item(_item) => {
-                if let Some(&None) = self.collected.get(0) {
-                    self.collected.pop_front();
+                if let Some(&None) = self.fnd_stmts.get(0) {
+                    self.fnd_stmts.pop_front();
                 }
             }
             Stmt::Expr(_expr) => {
-                if let Some(&None) = self.collected.get(0) {
-                    self.collected.pop_front();
+                if let Some(&None) = self.fnd_stmts.get(0) {
+                    self.fnd_stmts.pop_front();
                 }
             }
             Stmt::Semi(_expr, _semi) => {
-                if let Some(&None) = self.collected.get(0) {
-                    self.collected.pop_front();
+                if let Some(&None) = self.fnd_stmts.get(0) {
+                    self.fnd_stmts.pop_front();
                 }
             }
         }
@@ -149,7 +207,7 @@ impl VisitMut for YieldReplace {
                 _ => false,
             }
         }) {
-            if let Some(yld) = self.coll_replace.pop_front() {
+            if let Some(yld) = self.stmt_rep.pop_front() {
                 match yd_stmt {
                     // for assignment `let foo = yield_!(55);`
                     Stmt::Local(box_loc) => {

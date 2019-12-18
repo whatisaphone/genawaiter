@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use proc_macro_error::*;
 use proc_macro_hack::proc_macro_hack;
 use quote::{quote, ToTokens};
-use syn::{self, parse_macro_input, visit_mut::VisitMut, ItemFn, Type};
+use syn::{self, parse_macro_input, visit::Visit, visit_mut::VisitMut, ItemFn, Type};
 
 mod common;
 mod rc;
@@ -25,7 +25,7 @@ pub fn stack_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     stack::add_coroutine_arg(&mut function.sig.inputs, co_type);
 
     let mut y_found = YieldMatchMacro::new();
-    y_found.visit_item_fn_mut(&mut function);
+    y_found.visit_item_fn(&function);
 
     let mut y_rep = YieldReplace::new(y_found);
     y_rep.visit_item_fn_mut(&mut function);
@@ -41,7 +41,7 @@ pub fn stack_yield_cls(input: TokenStream) -> TokenStream {
 
     let mut yield_cls = input.closure;
     let mut ymc = YieldMatchMacro::new();
-    ymc.visit_expr_closure_mut(&mut yield_cls);
+    ymc.visit_expr_closure(&yield_cls);
 
     let mut y_replace = YieldReplace::new(ymc);
     y_replace.visit_expr_closure_mut(&mut yield_cls);
@@ -67,7 +67,7 @@ pub fn sync_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     sync::add_coroutine_arg(&mut function.sig.inputs, co_type);
 
     let mut y_found = YieldMatchMacro::new();
-    y_found.visit_item_fn_mut(&mut function);
+    y_found.visit_item_fn(&function);
 
     let mut y_rep = YieldReplace::new(y_found);
     y_rep.visit_item_fn_mut(&mut function);
@@ -83,7 +83,7 @@ pub fn sync_yield_cls(input: TokenStream) -> TokenStream {
 
     let mut yield_cls = input.closure;
     let mut ymc = YieldMatchMacro::new();
-    ymc.visit_expr_closure_mut(&mut yield_cls);
+    ymc.visit_expr_closure(&yield_cls);
 
     let mut y_replace = YieldReplace::new(ymc);
     y_replace.visit_expr_closure_mut(&mut yield_cls);
@@ -109,7 +109,7 @@ pub fn rc_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     rc::add_coroutine_arg(&mut function.sig.inputs, co_type);
 
     let mut y_found = YieldMatchMacro::new();
-    y_found.visit_item_fn_mut(&mut function);
+    y_found.visit_item_fn(&function);
 
     let mut y_rep = YieldReplace::new(y_found);
     y_rep.visit_item_fn_mut(&mut function);
@@ -125,7 +125,7 @@ pub fn rc_yield_cls(input: TokenStream) -> TokenStream {
 
     let mut yield_cls = input.closure;
     let mut ymc = YieldMatchMacro::new();
-    ymc.visit_expr_closure_mut(&mut yield_cls);
+    ymc.visit_expr_closure(&mut yield_cls);
 
     let mut y_replace = YieldReplace::new(ymc);
     y_replace.visit_expr_closure_mut(&mut yield_cls);

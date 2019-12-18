@@ -46,6 +46,26 @@ fn rc_proc_macro_fn() {
 }
 
 #[cfg(feature = "proc_macro")]
+#[test]
+fn rc_yield_a_func_method_call() {
+    fn pass_thru(n: u8) -> u8 {
+        n
+    }
+
+    #[genawaiter::rc::rc_yield_fn(u8)]
+    async fn odds() {
+        for n in (1..).step_by(2).take_while(|&n| n < 10) {
+            if true {
+                genawaiter::yield_!(pass_thru(n)).clone()
+            }
+        }
+    }
+    let gen = genawaiter::rc::Gen::new(odds);
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
+
+#[cfg(feature = "proc_macro")]
 #[cfg(feature = "nightly")]
 #[test]
 fn sync_proc_macro_closure() {

@@ -22,8 +22,12 @@ syn = {version = "1.0", features = [
     "printing",
     "extra-traits",
     "full",
+    "visit",
     "visit-mut",
     "clone-impls"
 ] }
 proc-macro-error = "0.4"
 proc-macro-hack = "0.5"
+
+[features]
+proc_macro_example = []
