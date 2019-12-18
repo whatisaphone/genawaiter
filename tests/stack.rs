@@ -82,7 +82,9 @@ fn stack_yield_loop_break() {
     async fn odds() {
         let mut n = 0_u8;
         loop {
-            if n == 9 { break }
+            if n == 9 {
+                break;
+            }
             loop {
                 n += 1;
                 if n % 2 != 0 {
@@ -106,8 +108,8 @@ fn stack_yield_match() {
                 Some(n) if n % 2 != 0 => {
                     println!("{}", n);
                     genawaiter::yield_!(n)
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }

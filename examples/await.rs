@@ -73,7 +73,9 @@ mod mac {
         async fn odds() {
             let mut n = 0_u8;
             loop {
-                if n == 9 { break }
+                if n == 9 {
+                    break;
+                }
                 loop {
                     n += 1;
                     if n % 2 != 0 {
@@ -95,8 +97,8 @@ mod mac {
                     Some(n) if n % 2 != 0 => {
                         println!("{}", n);
                         genawaiter::yield_!(n)
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
         }

@@ -7,8 +7,8 @@ use syn::{
     parse::{Parse, ParseStream},
     parse2,
     spanned::Spanned,
-    visit_mut::{self, VisitMut},
     visit::{self, Visit},
+    visit_mut::{self, VisitMut},
     Block,
     Expr,
     ExprClosure,
@@ -100,8 +100,8 @@ impl VisitMut for YieldReplace {
 
         if let Expr::Macro(m) = expr {
             if m.mac.path.segments.iter().any(|seg| seg.ident == "yield_") {
-                let tkns: TokenStream2 =
-                    syn::parse2(m.mac.tokens.clone()).expect("parse of TokensStream failed");
+                let tkns: TokenStream2 = syn::parse2(m.mac.tokens.clone())
+                    .expect("parse of TokensStream failed");
                 let ident = quote! { #tkns };
                 let co_call = quote! { co.yield_(#ident).await };
                 let cc: Expr = parse2(co_call).expect("parse of Expr failed");
