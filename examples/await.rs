@@ -68,11 +68,49 @@ mod mac {
         assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], res)
     }
 
+    fn stack_loop_break() {
+        #[genawaiter::stack::stack_yield_fn(u8)]
+        async fn odds() {
+            let mut n = 0_u8;
+            loop {
+                if n == 9 { break }
+                loop {
+                    n += 1;
+                    if n % 2 != 0 {
+                        break genawaiter::yield_!(n);
+                    }
+                }
+            }
+        }
+        genawaiter::generator_mut!(gen, odds);
+        let res = gen.into_iter().collect::<Vec<_>>();
+        assert_eq!(vec![1, 3, 5, 7, 9], res)
+    }
+
+    fn stack_yield_match() {
+        #[genawaiter::stack::stack_yield_fn(u8)]
+        async fn odds() {
+            for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
+                match Some(n) {
+                    Some(n) if n % 2 != 0 => {
+                        println!("{}", n);
+                        genawaiter::yield_!(n)
+                    },
+                    _ => {},
+                }
+            }
+        }
+        genawaiter::generator_mut!(gen, odds);
+        let res = gen.into_iter().collect::<Vec<_>>();
+        assert_eq!(vec![1, 3, 5, 7, 9], res)
+    }
+
     pub fn main() {
         rc_yield_a_func_method_call();
         stack_yield_closure();
         sync_proc_macro_fn();
         stack_yield_fn();
+        stack_yield_match();
     }
 }
 fn main() {

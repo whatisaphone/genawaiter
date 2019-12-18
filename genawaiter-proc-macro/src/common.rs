@@ -24,9 +24,6 @@ pub struct YieldMatchMacro {
     pub parent: Option<Stmt>,
     pub fnd_stmts: Vec<Option<Stmt>>,
     pub stmt_rep: Vec<Stmt>,
-    pub fnd_exprs: Vec<Option<Expr>>,
-    pub keep_exprs: Vec<Option<Expr>>,
-    pub expr_rep: Vec<Expr>,
 }
 
 impl YieldMatchMacro {
@@ -35,18 +32,11 @@ impl YieldMatchMacro {
             parent: None,
             fnd_stmts: vec![],
             stmt_rep: vec![],
-            fnd_exprs: vec![],
-            keep_exprs: vec![],
-            expr_rep: vec![],
         }
     }
 }
 
 impl Visit<'_> for YieldMatchMacro {
-    fn visit_expr(&mut self, expr: &Expr) {
-        self.fnd_exprs.push(Some(expr.clone()));
-        visit::visit_expr(self, expr);
-    }
     fn visit_stmt(&mut self, node: &Stmt) {
         match node {
             Stmt::Local(_local) => {
@@ -84,31 +74,6 @@ impl Visit<'_> for YieldMatchMacro {
             self.fnd_stmts.push(None)
         }
 
-        if let Some(&Some(Expr::Macro(mac))) = self.fnd_exprs.last().as_ref() {
-            if mac.mac.path.segments.iter().any(|seg| seg.ident == "yield_") {
-                println!("POP");
-
-                let _ = self.fnd_exprs.pop();
-
-                let tkns: TokenStream2 =
-                    syn::parse2(node.tokens.clone()).expect("parse of TokensStream failed");
-                let ident = quote! { #tkns };
-                let co_call = quote! { co.yield_(#ident).await };
-                let cc: Expr = parse2(co_call).expect("parse of Expr failed");
-                
-                if let Some(Some(Expr::MethodCall(mut call))) = self.fnd_exprs.pop() {
-                    self.keep_exprs.push(Some(Expr::MethodCall(call.clone())));
-                    call.receiver = Box::new(cc);
-                    println!("CALLLLL {:#?}", call);
-                    self.expr_rep.push(Expr::MethodCall(call));
-                }
-            } else {
-                self.keep_exprs.push(None);
-            }
-        } else {
-            self.keep_exprs.push(None);
-        }
-
         visit::visit_macro(self, node);
     }
 }
@@ -116,8 +81,6 @@ impl Visit<'_> for YieldMatchMacro {
 pub struct YieldReplace {
     pub fnd_stmts: VecDeque<Option<Stmt>>,
     pub stmt_rep: VecDeque<Stmt>,
-    pub fnd_expr: VecDeque<Option<Expr>>,
-    pub expr_rep: VecDeque<Expr>,
 }
 
 impl YieldReplace {
@@ -125,8 +88,6 @@ impl YieldReplace {
         Self {
             fnd_stmts: found.fnd_stmts.into_iter().collect(),
             stmt_rep: found.stmt_rep.into_iter().collect(),
-            fnd_expr: found.keep_exprs.into_iter().collect(),
-            expr_rep: found.expr_rep.into_iter().collect(),
         }
     }
 }
@@ -137,14 +98,14 @@ impl VisitMut for YieldReplace {
             self.fnd_stmts.pop_front();
         }
 
-        if let Some(&None) = self.fnd_expr.get(0) {
-            self.fnd_expr.pop_front();
-        } else if let Some(&Some(old)) = self.fnd_expr.get(0).as_ref() {
-            if old == expr {
-                println!("{:?}\n{:#?}", self.expr_rep, expr);
-                if let Some(new_expr) = self.expr_rep.remove(0) {
-                    *expr = new_expr;
-                }
+        if let Expr::Macro(m) = expr {
+            if m.mac.path.segments.iter().any(|seg| seg.ident == "yield_") {
+                let tkns: TokenStream2 =
+                    syn::parse2(m.mac.tokens.clone()).expect("parse of TokensStream failed");
+                let ident = quote! { #tkns };
+                let co_call = quote! { co.yield_(#ident).await };
+                let cc: Expr = parse2(co_call).expect("parse of Expr failed");
+                *expr = cc;
             }
         }
 
