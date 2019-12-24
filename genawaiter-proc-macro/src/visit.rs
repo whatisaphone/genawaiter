@@ -12,6 +12,7 @@ use syn::{
     Block,
     Expr,
     ExprClosure,
+    FnArg,
     Item,
     Macro,
     Result as SynResult,
@@ -38,20 +39,8 @@ impl YieldMatchMacro {
 
 impl Visit<'_> for YieldMatchMacro {
     fn visit_stmt(&mut self, node: &Stmt) {
-        match node {
-            Stmt::Local(_local) => {
-                self.parent = Some(node.clone());
-            }
-            Stmt::Item(_item) => {
-                self.parent = Some(node.clone());
-            }
-            Stmt::Expr(_expr) => {
-                self.parent = Some(node.clone());
-            }
-            Stmt::Semi(_expr, _semi) => {
-                self.parent = Some(node.clone());
-            }
-        }
+        self.parent = Some(node.clone());
+
         visit::visit_stmt(self, node);
     }
 
@@ -79,13 +68,15 @@ impl Visit<'_> for YieldMatchMacro {
 }
 
 pub struct YieldReplace {
+    co_arg: Option<String>,
     pub fnd_stmts: VecDeque<Option<Stmt>>,
     pub stmt_rep: VecDeque<Stmt>,
 }
 
 impl YieldReplace {
-    pub fn new(found: YieldMatchMacro) -> Self {
+    pub fn new(found: YieldMatchMacro, co_arg: Option<String>) -> Self {
         Self {
+            co_arg,
             fnd_stmts: found.fnd_stmts.into_iter().collect(),
             stmt_rep: found.stmt_rep.into_iter().collect(),
         }
@@ -93,6 +84,42 @@ impl YieldReplace {
 }
 
 impl VisitMut for YieldReplace {
+    fn visit_signature_mut(&mut self, sig: &mut syn::Signature) {
+        let co_arg_found = sig.inputs.iter().any(|input| {
+            match input {
+                FnArg::Receiver(_) => false,
+                FnArg::Typed(arg) => {
+                    match &*arg.ty {
+                        Type::Path(ty) => {
+                            ty.path
+                                .segments
+                                .iter()
+                                .any(|seg| seg.ident == "Co".to_string())
+                        }
+                        _ => false,
+                    }
+                }
+            }
+        });
+
+        if !co_arg_found {
+            let msg = "BUG must specify Some(Co<...>)";
+            let co_arg: FnArg =
+                match syn::parse_str::<FnArg>(&self.co_arg.as_ref().expect(msg)) {
+                    Ok(s) => s,
+                    Err(err) => {
+                        proc_macro_error::abort_call_site!(format!(
+                            "invalid type for Co yield {}",
+                            err
+                        ))
+                    }
+                };
+            sig.inputs.push_value(co_arg);
+        }
+
+        visit_mut::visit_signature_mut(self, sig)
+    }
+
     fn visit_expr_mut(&mut self, expr: &mut Expr) {
         if let Some(&None) = self.fnd_stmts.get(0) {
             self.fnd_stmts.pop_front();
@@ -109,107 +136,80 @@ impl VisitMut for YieldReplace {
             }
         }
 
-        visit_mut::visit_expr_mut(self, expr);
+        visit_mut::visit_expr_mut(self, expr)
     }
     fn visit_stmt_mut(&mut self, node: &mut Stmt) {
-        match node {
-            Stmt::Local(_local) => {
-                if let Some(&None) = self.fnd_stmts.get(0) {
-                    self.fnd_stmts.pop_front();
-                }
-            }
-            Stmt::Item(_item) => {
-                if let Some(&None) = self.fnd_stmts.get(0) {
-                    self.fnd_stmts.pop_front();
-                }
-            }
-            Stmt::Expr(_expr) => {
-                if let Some(&None) = self.fnd_stmts.get(0) {
-                    self.fnd_stmts.pop_front();
-                }
-            }
-            Stmt::Semi(_expr, _semi) => {
-                if let Some(&None) = self.fnd_stmts.get(0) {
-                    self.fnd_stmts.pop_front();
-                }
-            }
+        if let Some(&None) = self.fnd_stmts.get(0) {
+            self.fnd_stmts.pop_front();
         }
-        visit_mut::visit_stmt_mut(self, node);
+
+        visit_mut::visit_stmt_mut(self, node)
     }
 
     fn visit_block_mut(&mut self, node: &mut Block) {
-        for yd_stmt in node.stmts.iter_mut().filter(|yd_stmt| {
-            match yd_stmt {
-                Stmt::Item(Item::Macro(m)) => {
-                    m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
-                }
-                Stmt::Expr(Expr::Macro(m)) => {
-                    m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
-                }
-                Stmt::Semi(Expr::Macro(m), _) => {
-                    m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
-                }
-                Stmt::Local(box_loc) => {
-                    if let Some(local) = &box_loc.init {
-                        match &*local.1 {
-                            Expr::Macro(m) => {
-                                m.mac
-                                    .path
-                                    .segments
-                                    .iter()
-                                    .any(|seg| seg.ident == "yield_")
-                            }
-                            _ => false,
-                        }
-                    } else {
-                        false
-                    }
-                }
-                _ => false,
-            }
-        }) {
-            if let Some(yld) = self.stmt_rep.pop_front() {
+        for yd_stmt in node.stmts.iter_mut().filter(matching_yield_macro) {
+            if let Some(await_stmt) = self.stmt_rep.pop_front() {
                 match yd_stmt {
                     // for assignment `let foo = yield_!(55);`
                     Stmt::Local(box_loc) => {
                         if let Some(local) = &mut box_loc.init {
                             match &mut *local.1 {
                                 Expr::Macro(_macro) => {
-                                    match yld {
+                                    match await_stmt {
                                         Stmt::Expr(inner) => *local.1 = inner,
-                                        Stmt::Item(_inner) => {
-                                            abort!(
-                                                box_loc.span(),
-                                                "`{}` is not a valid assignment"
-                                            )
-                                        }
-                                        Stmt::Local(_inner) => {
-                                            abort!(
-                                                box_loc.span(),
-                                                "`{}` is not a valid assignment"
-                                            )
-                                        }
                                         Stmt::Semi(inner, _) => *local.1 = inner,
+                                        _ => {
+                                            abort!(
+                                                box_loc.span(),
+                                                "`{}` is not a valid assignment"
+                                            )
+                                        }
                                     }
                                 }
-                                _ => panic!("bug macro found then lost"),
+                                _ => panic!("BUG macro found then lost"),
                             }
                         } else {
-                            panic!("bug macro found then lost")
+                            panic!("BUG macro found then lost")
                         }
                     }
                     _ => {
-                        *yd_stmt = yld;
+                        *yd_stmt = await_stmt;
                     }
                 }
             }
         }
 
-        visit_mut::visit_block_mut(self, node);
+        visit_mut::visit_block_mut(self, node)
     }
 }
 
-#[derive(Debug)]
+fn matching_yield_macro(yd_stmt: &&mut Stmt) -> bool {
+    match yd_stmt {
+        Stmt::Item(Item::Macro(m)) => {
+            m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
+        }
+        Stmt::Expr(Expr::Macro(m)) => {
+            m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
+        }
+        Stmt::Semi(Expr::Macro(m), _) => {
+            m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
+        }
+        Stmt::Local(box_loc) => {
+            if let Some(local) = &box_loc.init {
+                match &*local.1 {
+                    Expr::Macro(m) => {
+                        m.mac.path.segments.iter().any(|seg| seg.ident == "yield_")
+                    }
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
 pub struct YieldClosure {
     pub ty: Type,
     pub closure: ExprClosure,

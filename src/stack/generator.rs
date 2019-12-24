@@ -25,13 +25,15 @@ struct State<Y, R, F: Future> {
 impl<Y, R, F: Future> Shelf<Y, R, F> {
     /// Creates a new, empty `Shelf`.
     ///
-    /// _See the module-level docs for examples._
+    /// _See the module-level docs for examples.
+    #[must_use]
     pub fn new() -> Self {
         Self(mem::MaybeUninit::uninit())
     }
 }
 
 impl<Y, R, F: Future> Default for Shelf<Y, R, F> {
+    #[must_use]
     fn default() -> Self {
         Self::new()
     }

@@ -68,7 +68,7 @@ fn rc_yield_a_func_method_call() {
 #[cfg(feature = "proc_macro")]
 #[cfg(feature = "nightly")]
 #[test]
-fn sync_proc_macro_closure() {
+fn rc_proc_macro_closure() {
     use genawaiter::rc_yield_cls;
 
     let gen = Gen::new(rc_yield_cls!(

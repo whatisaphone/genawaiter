@@ -5,6 +5,7 @@ impl<Y, F: Future<Output = ()>> IntoIterator for Gen<Y, (), F> {
     type Item = Y;
     type IntoIter = IntoIter<Y, F>;
 
+    #[must_use]
     fn into_iter(self) -> Self::IntoIter {
         IntoIter { generator: self }
     }
