@@ -68,15 +68,13 @@ impl Visit<'_> for YieldMatchMacro {
 }
 
 pub struct YieldReplace {
-    co_arg: Option<String>,
     pub fnd_stmts: VecDeque<Option<Stmt>>,
     pub stmt_rep: VecDeque<Stmt>,
 }
 
 impl YieldReplace {
-    pub fn new(found: YieldMatchMacro, co_arg: Option<String>) -> Self {
+    pub fn new(found: YieldMatchMacro) -> Self {
         Self {
-            co_arg,
             fnd_stmts: found.fnd_stmts.into_iter().collect(),
             stmt_rep: found.stmt_rep.into_iter().collect(),
         }
@@ -84,42 +82,6 @@ impl YieldReplace {
 }
 
 impl VisitMut for YieldReplace {
-    fn visit_signature_mut(&mut self, sig: &mut syn::Signature) {
-        let co_arg_found = sig.inputs.iter().any(|input| {
-            match input {
-                FnArg::Receiver(_) => false,
-                FnArg::Typed(arg) => {
-                    match &*arg.ty {
-                        Type::Path(ty) => {
-                            ty.path
-                                .segments
-                                .iter()
-                                .any(|seg| seg.ident == "Co".to_string())
-                        }
-                        _ => false,
-                    }
-                }
-            }
-        });
-
-        if !co_arg_found {
-            let msg = "BUG must specify Some(Co<...>)";
-            let co_arg: FnArg =
-                match syn::parse_str::<FnArg>(&self.co_arg.as_ref().expect(msg)) {
-                    Ok(s) => s,
-                    Err(err) => {
-                        proc_macro_error::abort_call_site!(format!(
-                            "invalid type for Co yield {}",
-                            err
-                        ))
-                    }
-                };
-            sig.inputs.push_value(co_arg);
-        }
-
-        visit_mut::visit_signature_mut(self, sig)
-    }
-
     fn visit_expr_mut(&mut self, expr: &mut Expr) {
         if let Some(&None) = self.fnd_stmts.get(0) {
             self.fnd_stmts.pop_front();
