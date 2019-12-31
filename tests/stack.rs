@@ -43,23 +43,12 @@ fn test_stream() {
 
 #[cfg(feature = "proc_macro")]
 #[test]
-fn stack_proc_macro_with_co_arg() {
-    #[genawaiter::stack::stack_yield_fn(u8)]
-    async fn odds(co: genawaiter::stack::Co<'_, u8>) {
-        let _x = genawaiter::yield_!(10);
-    }
-    generator_mut!(gen, odds);
-    let res = gen.into_iter().collect::<Vec<_>>();
-    assert_eq!(vec![10], res)
-}
-
-#[cfg(feature = "proc_macro")]
-#[test]
 fn stack_proc_macro_fn() {
-    #[genawaiter::stack::stack_yield_fn(u8)]
+    use genawaiter::{stack::producer_fn, yield_};
+    #[producer_fn(u8)]
     async fn odds() {
         for n in (1..).step_by(2).take_while(|&n| n < 10) {
-            let _x = genawaiter::yield_!(n);
+            let _x = yield_!(n);
         }
     }
     generator_mut!(gen, odds);
@@ -70,19 +59,20 @@ fn stack_proc_macro_fn() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_yield_a_func_call() {
+    use genawaiter::{stack::producer_fn, yield_};
+
     fn pass_thru(n: u8) -> u8 {
         n
     }
-
-    #[genawaiter::stack::stack_yield_fn(u8)]
+    #[producer_fn(u8)]
     async fn odds() {
         for n in (1..).step_by(2).take_while(|&n| n < 10) {
             if true {
-                genawaiter::yield_!(pass_thru(n))
+                yield_!(pass_thru(n))
             }
         }
     }
-    genawaiter::generator_mut!(gen, odds);
+    generator_mut!(gen, odds);
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
@@ -90,7 +80,9 @@ fn stack_yield_a_func_call() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_yield_loop_break() {
-    #[genawaiter::stack::stack_yield_fn(u8)]
+    use genawaiter::{stack::producer_fn, yield_};
+
+    #[producer_fn(u8)]
     async fn odds() {
         let mut n = 0_u8;
         loop {
@@ -100,12 +92,12 @@ fn stack_yield_loop_break() {
             loop {
                 n += 1;
                 if n % 2 != 0 {
-                    break genawaiter::yield_!(n);
+                    break yield_!(n);
                 }
             }
         }
     }
-    genawaiter::generator_mut!(gen, odds);
+    generator_mut!(gen, odds);
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
@@ -113,64 +105,41 @@ fn stack_yield_loop_break() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_yield_match() {
-    #[genawaiter::stack::stack_yield_fn(u8)]
+    use genawaiter::{stack::producer_fn, yield_};
+
+    #[producer_fn(u8)]
     async fn odds() {
         for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
             match Some(n) {
-                Some(n) if n % 2 != 0 => genawaiter::yield_!(n),
+                Some(n) if n % 2 != 0 => yield_!(n),
                 _ => {}
             }
         }
     }
-    genawaiter::generator_mut!(gen, odds);
+    generator_mut!(gen, odds);
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
 
 #[cfg(feature = "proc_macro")]
-#[cfg(feature = "nightly")]
 #[test]
 fn stack_yield_closure() {
+    use genawaiter::{stack_producer, yield_};
+
     let mut shelf = genawaiter::stack::Shelf::new();
     let gen = unsafe {
-        genawaiter::stack::Gen::new(
+        Gen::new(
             &mut shelf,
-            genawaiter::stack_yield_cls!(
-                u8 in async move || {
-                    let mut n = 1_u8;
-                    while n < 10 {
-                        genawaiter::yield_!(n);
-                        n += 2;
-                        let _ = yield_!(n - 1).clone();
-                    }
+            stack_producer!(|| {
+                let mut n = 1_u8;
+                while n < 10 {
+                    yield_!(n);
+                    n += 2;
+                    let _ = yield_!(n - 1).clone();
                 }
-            ),
+            }),
         )
     };
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], res)
 }
-
-// #[cfg(feature = "proc_macro")]
-// #[cfg(feature = "nightly")]
-// #[test]
-// fn stack_yield_closure_with_co_arg() {
-//     let mut shelf = genawaiter::stack::Shelf::new();
-//     let gen = unsafe {
-//         genawaiter::stack::Gen::new(
-//             &mut shelf,
-//             genawaiter::stack_yield_cls!(
-//                 u8 in async move |co: ::genawaiter::stack::Co<'_, u8>| {
-//                     let mut n = 1_u8;
-//                     while n < 10 {
-//                         genawaiter::yield_!(n);
-//                         n += 2;
-//                         let _ = yield_!(n - 1).clone();
-//                     }
-//                 }
-//             ),
-//         )
-//     };
-//     let res = gen.into_iter().collect::<Vec<_>>();
-//     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], res)
-// }

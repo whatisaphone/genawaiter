@@ -205,7 +205,7 @@ mod iterator;
 mod stream;
 
 #[cfg(feature = "proc_macro")]
-pub use genawaiter_proc_macro::sync_yield_fn;
+pub use genawaiter_proc_macro::sync_producer_fn as producer_fn;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]

@@ -188,7 +188,7 @@ mod stream;
 /// Function like `proc_macro` to easily and safely create generators from
 /// functions.
 #[cfg(feature = "proc_macro")]
-pub use genawaiter_proc_macro::stack_yield_fn;
+pub use genawaiter_proc_macro::stack_producer_fn as producer_fn;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]
@@ -354,4 +354,19 @@ mod doctests {
     ```
     */
     fn co_is_not_static_baseline() {}
+}
+#[allow(dead_code)]
+#[cfg(feature = "proc_macro")]
+mod doc_compile_fail {
+    /**
+    Make sure `co` cannot escape to the `'static` lifetime.
+
+    ```compile_fail
+    #[genawaiter::stack::producer_fn(u8)]
+    async fn odds(co: genawaiter::stack::Co<'_, u8>) {
+        let _x = genawaiter::yield_!(10);
+    }
+    ```
+    */
+    fn with_args_compile_fail() {}
 }

@@ -38,10 +38,12 @@ fn test_stream() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn sync_proc_macro_fn() {
-    #[genawaiter::sync::sync_yield_fn(u8)]
+    use genawaiter::{sync::producer_fn, yield_};
+
+    #[producer_fn(u8)]
     async fn odds() {
         for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
-            genawaiter::yield_!(n);
+            yield_!(n);
         }
     }
     let gen = Gen::new(odds);
@@ -50,33 +52,31 @@ fn sync_proc_macro_fn() {
 }
 
 #[cfg(feature = "proc_macro")]
-#[cfg(feature = "nightly")]
 #[test]
 fn sync_proc_macro_closure() {
-    use genawaiter::sync_yield_cls;
+    use genawaiter::{sync_producer, yield_};
 
-    let gen = Gen::new(sync_yield_cls!(
-        u8 in async move || {
-            let mut n = 1_u8;
-            while n < 10 {
-                genawaiter::yield_!(n);
-                n += 2;
-            }
+    let gen = Gen::new(sync_producer!(|| {
+        let mut n = 1_u8;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
         }
-    ));
+    }));
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
 
 #[cfg(feature = "proc_macro")]
-#[cfg(feature = "nightly")]
 #[test]
 fn sync_proc_macro_fn_method_call() {
-    #[genawaiter::sync::sync_yield_fn(u8)]
+    use genawaiter::{sync::producer_fn, yield_};
+
+    #[producer_fn(u8)]
     async fn odds() {
         for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
             // this fails clippy
-            let _ = genawaiter::yield_!(n).clone();
+            let _ = yield_!(n).clone();
         }
     }
     let gen = genawaiter::sync::Gen::new(odds);

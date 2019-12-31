@@ -230,23 +230,20 @@ mod waker;
 #[cfg(feature = "proc_macro")]
 use proc_macro_hack::proc_macro_hack;
 
-/// Attribute `proc_macro` to easily and safely create generators from
-/// functions that are `Sync`.
+///
 #[cfg(feature = "proc_macro")]
 #[proc_macro_hack]
-pub use genawaiter_proc_macro::sync_yield_cls;
+pub use genawaiter_proc_macro::sync_producer;
 
-/// Function like `proc_macro` to easily and safely create generators from
-/// closures that are `Sync`.
+///
 #[cfg(feature = "proc_macro")]
 #[proc_macro_hack]
-pub use genawaiter_proc_macro::rc_yield_cls;
+pub use genawaiter_proc_macro::rc_producer;
 
-/// Function like `proc_macro` to easily and safely create generators from
-/// closures on the stack.
+///
 #[cfg(feature = "proc_macro")]
 #[proc_macro_hack]
-pub use genawaiter_proc_macro::stack_yield_cls;
+pub use genawaiter_proc_macro::stack_producer;
 
 /// This macro is used to replace the keyword yield to
 /// avoid using nightly features when using any of the three
@@ -254,9 +251,9 @@ pub use genawaiter_proc_macro::stack_yield_cls;
 ///
 /// # Example
 /// ```
-/// use genawaiter::{stack::stack_yield_fn, yield_};
+/// use genawaiter::{stack::producer_fn, yield_};
 ///
-/// #[stack_yield_fn(u8)]
+/// #[producer_fn(u8)]
 /// async fn odds() {
 ///     for n in (1..).step_by(2).take_while(|n| *n < 10) {
 ///         yield_!(n)

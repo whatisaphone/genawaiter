@@ -34,10 +34,12 @@ fn test_stream() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn rc_proc_macro_fn() {
-    #[genawaiter::rc::rc_yield_fn(u8)]
+    use genawaiter::{rc::producer_fn, yield_};
+
+    #[producer_fn(u8)]
     async fn odds() {
         for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
-            genawaiter::yield_!(n);
+            yield_!(n);
         }
     }
     let gen = Gen::new(odds);
@@ -48,39 +50,53 @@ fn rc_proc_macro_fn() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn rc_yield_a_func_method_call() {
+    use genawaiter::{rc::producer_fn, yield_};
+
     fn pass_thru(n: u8) -> u8 {
         n
     }
-
-    #[genawaiter::rc::rc_yield_fn(u8)]
+    #[producer_fn(u8)]
     async fn odds() {
         for n in (1..).step_by(2).take_while(|&n| n < 10) {
             if true {
-                genawaiter::yield_!(pass_thru(n)).clone()
+                yield_!(pass_thru(n)).clone()
             }
         }
     }
-    let gen = genawaiter::rc::Gen::new(odds);
+    let gen = Gen::new(odds);
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
 
 #[cfg(feature = "proc_macro")]
-#[cfg(feature = "nightly")]
 #[test]
 fn rc_proc_macro_closure() {
-    use genawaiter::rc_yield_cls;
+    use genawaiter::{rc_producer, yield_};
 
-    let gen = Gen::new(rc_yield_cls!(
-        u8 in async move || {
-            let mut n = 1_u8;
-            while n < 10 {
-                genawaiter::yield_!(n);
-                n += 2;
-                genawaiter::yield_!(n - 1);
-            }
+    let gen = Gen::new(rc_producer!(|| {
+        let mut n = 1_u8;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
         }
-    ));
+    }));
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn rc_proc_macro_closure_yield2() {
+    use genawaiter::{rc_producer, yield_};
+
+    let gen = Gen::new(rc_producer!(|| {
+        let mut n = 1_u8;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
+            yield_!(n - 1);
+        }
+    }));
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], res)
 }

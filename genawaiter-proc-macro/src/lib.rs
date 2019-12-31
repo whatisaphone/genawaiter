@@ -3,166 +3,151 @@ extern crate proc_macro;
 use std::string::ToString;
 
 use proc_macro::TokenStream;
-use proc_macro_error::*;
+use proc_macro_error::{abort, abort_call_site, proc_macro_error};
 use proc_macro_hack::proc_macro_hack;
-use quote::{quote, ToTokens};
+use quote::quote;
 use syn::{
     self,
+    parse2,
     parse_macro_input,
     parse_str,
-    punctuated::Punctuated,
-    token::Comma,
-    visit::Visit,
+    spanned::Spanned,
     visit_mut::VisitMut,
+    Expr,
     ExprClosure,
     FnArg,
     Ident,
     ItemFn,
     Pat,
+    Token,
     Type,
 };
 
 mod visit;
-use visit::{YieldClosure, YieldMatchMacro, YieldReplace};
+use visit::{YieldClosure, YieldReplace};
 
+/// Macro attribute to turn an `async fn` into a generator, yielding values on
+/// the stack,
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn stack_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn stack_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     let a = args.clone();
     // make sure it is a valid type
     let _ = parse_macro_input!(a as Type);
     let mut function = parse_macro_input!(input as ItemFn);
 
-    let mut y_found = YieldMatchMacro::new();
-    y_found.visit_item_fn(&function);
-
-    let co_arg = format!("{}{}>", stack::CO_ARG, args);
+    let co_arg = format!("{}{}>", stack::CO_ARG_FN, args);
     add_coroutine_arg(&mut function, &co_arg);
 
-    let mut y_rep = YieldReplace::new(y_found);
-    y_rep.visit_item_fn_mut(&mut function);
+    YieldReplace.visit_item_fn_mut(&mut function);
 
     let tokens = quote! { #function };
     tokens.into()
 }
 
+/// Function like `proc_macro` to easily and safely create generators from
+/// closures on the stack.
 #[proc_macro_hack]
 #[proc_macro_error]
-pub fn stack_yield_cls(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as YieldClosure);
+pub fn stack_producer(input: TokenStream) -> TokenStream {
+    let mut input = parse_macro_input!(input as YieldClosure);
 
-    let mut yield_cls = input.closure;
-    let mut ymc = YieldMatchMacro::new();
-    ymc.visit_expr_closure(&yield_cls);
+    add_move_async_closure(&mut input.closure);
+    add_co_arg_closure(&mut input.closure, &stack::CO_ARG);
+    YieldReplace.visit_expr_closure_mut(&mut input.closure);
 
-    let ty = input.ty.to_token_stream().to_string();
-    let co_arg = format!("{}{}>", stack::CO_ARG, ty);
-    add_co_arg_closure(&mut yield_cls, &co_arg);
-
-    let mut y_replace = YieldReplace::new(ymc);
-    y_replace.visit_expr_closure_mut(&mut yield_cls);
-
-    let tokens = quote! { #yield_cls };
+    let closure = input.closure;
+    let tokens = quote! { #closure };
     tokens.into()
 }
 
+/// Macro attribute to turn an `async fn` into a generator that can be
+/// sent across threads.
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn sync_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn sync_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     let a = args.clone();
     // make sure it is a valid type
     let _ = parse_macro_input!(a as Type);
     let mut function = parse_macro_input!(input as ItemFn);
 
-    let mut y_found = YieldMatchMacro::new();
-    y_found.visit_item_fn(&function);
-
-    let co_arg = format!("{}{}>", sync::CO_ARG, args);
+    let co_arg = format!("{}{}>", sync::CO_ARG_FN, args);
     add_coroutine_arg(&mut function, &co_arg);
 
-    let mut y_rep = YieldReplace::new(y_found);
-    y_rep.visit_item_fn_mut(&mut function);
+    YieldReplace.visit_item_fn_mut(&mut function);
 
     let tokens = quote! { #function };
     tokens.into()
 }
 
+/// Attribute `proc_macro` to easily create generators from
+/// closures that are `Sync`.
 #[proc_macro_hack]
 #[proc_macro_error]
-pub fn sync_yield_cls(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as YieldClosure);
+pub fn sync_producer(input: TokenStream) -> TokenStream {
+    let mut input = parse_macro_input!(input as YieldClosure);
 
-    let mut yield_cls = input.closure;
-    let mut ymc = YieldMatchMacro::new();
-    ymc.visit_expr_closure(&yield_cls);
+    add_move_async_closure(&mut input.closure);
+    add_co_arg_closure(&mut input.closure, &sync::CO_ARG);
+    YieldReplace.visit_expr_closure_mut(&mut input.closure);
 
-    let ty = input.ty.to_token_stream().to_string();
-    let co_arg = format!("{}{}>", sync::CO_ARG, ty);
-    add_co_arg_closure(&mut yield_cls, &co_arg);
-
-    let mut y_replace = YieldReplace::new(ymc);
-    y_replace.visit_expr_closure_mut(&mut yield_cls);
-
-    let tokens = quote! { #yield_cls };
+    let closure = input.closure;
+    let tokens = quote! { #closure };
     tokens.into()
 }
 
+/// Macro attribute to turn an `async fn` into a ref counted (`Rc`) generator.
 #[proc_macro_attribute]
 #[proc_macro_error]
-pub fn rc_yield_fn(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn rc_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     let a = args.clone();
     // make sure it is a valid type
     let _ = parse_macro_input!(a as Type);
     let mut function = parse_macro_input!(input as ItemFn);
 
-    let mut y_found = YieldMatchMacro::new();
-    y_found.visit_item_fn(&function);
-
-    let co_arg = format!("{}{}>", rc::CO_ARG, args);
+    let co_arg = format!("{}{}>", rc::CO_ARG_FN, args);
     add_coroutine_arg(&mut function, &co_arg);
 
-    let mut y_rep = YieldReplace::new(y_found);
-    y_rep.visit_item_fn_mut(&mut function);
+    YieldReplace.visit_item_fn_mut(&mut function);
 
     let tokens = quote! { #function };
     tokens.into()
 }
 
+/// Function like `proc_macro` to easily create generators from
+/// closures that are `Rc`.
 #[proc_macro_hack]
 #[proc_macro_error]
-pub fn rc_yield_cls(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as YieldClosure);
+pub fn rc_producer(input: TokenStream) -> TokenStream {
+    let mut input = parse_macro_input!(input as YieldClosure);
 
-    let mut yield_cls = input.closure;
-    let mut ymc = YieldMatchMacro::new();
-    ymc.visit_expr_closure(&yield_cls);
+    add_move_async_closure(&mut input.closure);
+    add_co_arg_closure(&mut input.closure, &rc::CO_ARG);
+    YieldReplace.visit_expr_closure_mut(&mut input.closure);
 
-    let ty = input.ty.to_token_stream().to_string();
-    let co_arg = format!("{}{}>", rc::CO_ARG, ty);
-    add_co_arg_closure(&mut yield_cls, &co_arg);
-
-    let mut y_replace = YieldReplace::new(ymc);
-    y_replace.visit_expr_closure_mut(&mut yield_cls);
-
-    let tokens = quote! { #yield_cls };
+    let closure = input.closure;
+    let tokens = quote! { #closure };
     tokens.into()
 }
 
 mod stack {
-    pub(crate) const CO_ARG: &str = "co: ::genawaiter::stack::Co<'_, ";
+    pub(crate) const CO_ARG_FN: &str = "co: ::genawaiter::stack::Co<'_, ";
+    pub(crate) const CO_ARG: &str = "co: ::genawaiter::stack::Co<'_, _>";
 }
 
 mod sync {
-    pub(crate) const CO_ARG: &str = "co: ::genawaiter::sync::Co<";
+    pub(crate) const CO_ARG_FN: &str = "co: ::genawaiter::sync::Co<";
+    pub(crate) const CO_ARG: &str = "co: ::genawaiter::sync::Co<_>";
 }
 
 mod rc {
-    pub(crate) const CO_ARG: &str = "co: ::genawaiter::rc::Co<";
+    pub(crate) const CO_ARG_FN: &str = "co: ::genawaiter::rc::Co<";
+    pub(crate) const CO_ARG: &str = "co: ::genawaiter::rc::Co<_>";
 }
 
 /// Mutates the input `Punctuated<FnArg, Comma>` to a lifetimeless `co:
 /// Co<{type}>`.
-pub(crate) fn add_coroutine_arg(func: &mut ItemFn, co_ty: &str) {
+fn add_coroutine_arg(func: &mut ItemFn, co_ty: &str) {
     let co_arg_found = func.sig.inputs.iter().any(|input| {
         match input {
             FnArg::Receiver(_) => false,
@@ -185,6 +170,11 @@ pub(crate) fn add_coroutine_arg(func: &mut ItemFn, co_ty: &str) {
             Err(err) => abort_call_site!(format!("invalid type for Co yield {}", err)),
         };
         func.sig.inputs.push_value(co_arg)
+    } else {
+        abort!(
+            func.sig.span(),
+            "arguments are not allowed when using proc_macro"
+        )
     }
 }
 
@@ -211,5 +201,25 @@ fn add_co_arg_closure(cls: &mut ExprClosure, co_arg: &str) {
             _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
         };
         cls.inputs.push(Pat::Type(arg))
+    } else {
+        abort!(
+            cls.inputs.span(),
+            "arguments are not allowed when using proc_macro"
+        )
+    }
+}
+
+fn add_move_async_closure(closure: &mut ExprClosure) {
+    closure.asyncness = None;
+    closure.capture = None;
+    if let Expr::Async(expr) = &mut *closure.body {
+        let mv = parse_str::<Token![move]>("move").expect("parse of `move` failed");
+        expr.capture = Some(mv);
+    } else {
+        let non_async = closure.body.clone();
+        let async_move_body =
+            parse2::<syn::ExprAsync>(quote! { async move { #non_async } })
+                .expect("async body parse failed");
+        closure.body = Box::new(syn::Expr::Async(async_move_body));
     }
 }
