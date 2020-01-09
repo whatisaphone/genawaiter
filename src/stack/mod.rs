@@ -369,21 +369,4 @@ mod doc_compile_fail {
     ```
     */
     fn with_args_compile_fail() {}
-    /**
-    Make sure `co` cannot be used in body block by user.
-
-    ```compile_fail
-    #[genawaiter::stack::producer_fn(u8)]
-    async fn odds() {
-        co.drop()
-    }
-    ```
-    ```compile_fail
-    #[genawaiter::stack::producer_fn(u8)]
-    async fn odds() {
-        let x: Co<'static, u8> = std::mem::transmute(co);
-    }
-    ```
-    */
-    fn mutate_co_arg_fail() {}
 }
