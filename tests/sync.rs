@@ -68,6 +68,7 @@ fn sync_proc_macro_closure() {
 }
 
 #[cfg(feature = "proc_macro")]
+#[allow(clippy::let_unit_value)]
 #[test]
 fn sync_proc_macro_fn_method_call() {
     use genawaiter::{sync::producer_fn, yield_};
@@ -75,7 +76,6 @@ fn sync_proc_macro_fn_method_call() {
     #[producer_fn(u8)]
     async fn odds() {
         for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
-            // this fails clippy
             let _ = yield_!(n).clone();
         }
     }

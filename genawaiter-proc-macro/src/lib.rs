@@ -24,7 +24,7 @@ use syn::{
 };
 
 mod visit;
-use visit::{YieldClosure, YieldReplace};
+use visit::YieldReplace;
 
 /// Macro attribute to turn an `async fn` into a generator, yielding values on
 /// the stack,
@@ -50,13 +50,13 @@ pub fn stack_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn stack_producer(input: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(input as YieldClosure);
+    let mut input = parse_macro_input!(input as ExprClosure);
 
-    add_move_async_closure(&mut input.closure);
-    add_co_arg_closure(&mut input.closure, &stack::CO_ARG);
-    YieldReplace.visit_expr_closure_mut(&mut input.closure);
+    add_move_async_closure(&mut input);
+    add_co_arg_closure(&mut input, &stack::CO_ARG);
+    YieldReplace.visit_expr_closure_mut(&mut input);
 
-    let closure = input.closure;
+    let closure = input;
     let tokens = quote! { #closure };
     tokens.into()
 }
@@ -85,13 +85,13 @@ pub fn sync_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn sync_producer(input: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(input as YieldClosure);
+    let mut input = parse_macro_input!(input as ExprClosure);
 
-    add_move_async_closure(&mut input.closure);
-    add_co_arg_closure(&mut input.closure, &sync::CO_ARG);
-    YieldReplace.visit_expr_closure_mut(&mut input.closure);
+    add_move_async_closure(&mut input);
+    add_co_arg_closure(&mut input, &sync::CO_ARG);
+    YieldReplace.visit_expr_closure_mut(&mut input);
 
-    let closure = input.closure;
+    let closure = input;
     let tokens = quote! { #closure };
     tokens.into()
 }
@@ -119,13 +119,13 @@ pub fn rc_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn rc_producer(input: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(input as YieldClosure);
+    let mut input = parse_macro_input!(input as ExprClosure);
 
-    add_move_async_closure(&mut input.closure);
-    add_co_arg_closure(&mut input.closure, &rc::CO_ARG);
-    YieldReplace.visit_expr_closure_mut(&mut input.closure);
+    add_move_async_closure(&mut input);
+    add_co_arg_closure(&mut input, &rc::CO_ARG);
+    YieldReplace.visit_expr_closure_mut(&mut input);
 
-    let closure = input.closure;
+    let closure = input;
     let tokens = quote! { #closure };
     tokens.into()
 }

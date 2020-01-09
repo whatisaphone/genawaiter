@@ -266,4 +266,7 @@ macro_rules! yield_ {
     ($val:tt) => {
         compile_error!("forgot to use attribute")
     };
+    (@emit => $co:expr, $value:expr) => {
+        $co.yield_($value).await;
+    };
 }
