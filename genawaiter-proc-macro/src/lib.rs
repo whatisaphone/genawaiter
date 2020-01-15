@@ -8,18 +8,14 @@ use proc_macro_hack::proc_macro_hack;
 use quote::quote;
 use syn::{
     self,
-    parse2,
     parse_macro_input,
     parse_str,
     spanned::Spanned,
     visit_mut::VisitMut,
-    Expr,
-    ExprClosure,
+    ExprBlock,
     FnArg,
     Ident,
     ItemFn,
-    Pat,
-    Token,
     Type,
 };
 
@@ -50,14 +46,17 @@ pub fn stack_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn stack_producer(input: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(input as ExprClosure);
+    let mut input = parse_macro_input!(input as ExprBlock);
 
-    add_move_async_closure(&mut input);
-    add_co_arg_closure(&mut input, &stack::CO_ARG);
-    YieldReplace.visit_expr_closure_mut(&mut input);
+    YieldReplace.visit_expr_block_mut(&mut input);
+    // for some reason parsing as a PatType (correct for closures) fails
+    // the only way around is to destructure.
+    let arg = match parse_str::<FnArg>(stack::CO_ARG) {
+        Ok(FnArg::Typed(x)) => x,
+        _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
+    };
 
-    let closure = input;
-    let tokens = quote! { #closure };
+    let tokens = quote! { |#arg| async move #input };
     tokens.into()
 }
 
@@ -85,14 +84,16 @@ pub fn sync_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn sync_producer(input: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(input as ExprClosure);
+    let mut input = parse_macro_input!(input as ExprBlock);
 
-    add_move_async_closure(&mut input);
-    add_co_arg_closure(&mut input, &sync::CO_ARG);
-    YieldReplace.visit_expr_closure_mut(&mut input);
+    YieldReplace.visit_expr_block_mut(&mut input);
+    // for some reason parsing as a PatType (correct for closures) fails
+    let arg = match parse_str::<FnArg>(sync::CO_ARG) {
+        Ok(FnArg::Typed(x)) => x,
+        _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
+    };
 
-    let closure = input;
-    let tokens = quote! { #closure };
+    let tokens = quote! { |#arg| async move #input };
     tokens.into()
 }
 
@@ -119,14 +120,16 @@ pub fn rc_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn rc_producer(input: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(input as ExprClosure);
+    let mut input = parse_macro_input!(input as ExprBlock);
 
-    add_move_async_closure(&mut input);
-    add_co_arg_closure(&mut input, &rc::CO_ARG);
-    YieldReplace.visit_expr_closure_mut(&mut input);
+    YieldReplace.visit_expr_block_mut(&mut input);
+    // for some reason parsing as a PatType (correct for closures) fails
+    let arg = match parse_str::<FnArg>(rc::CO_ARG) {
+        Ok(FnArg::Typed(x)) => x,
+        _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
+    };
 
-    let closure = input;
-    let tokens = quote! { #closure };
+    let tokens = quote! { |#arg| async move #input };
     tokens.into()
 }
 
@@ -177,51 +180,5 @@ fn add_coroutine_arg(func: &mut ItemFn, co_ty: &str) {
             func.sig.span(),
             "arguments are not allowed when using proc_macro"
         )
-    }
-}
-
-fn add_co_arg_closure(cls: &mut ExprClosure, co_arg: &str) {
-    let co_arg_found = cls.inputs.iter().any(|input| {
-        match input {
-            Pat::Type(arg) => {
-                match &*arg.ty {
-                    Type::Path(ty) => {
-                        ty.path
-                            .segments
-                            .iter()
-                            .any(|seg| seg.ident == "Co".to_string())
-                    }
-                    _ => false,
-                }
-            }
-            _ => false,
-        }
-    });
-    if !co_arg_found {
-        let arg = match parse_str::<FnArg>(co_arg) {
-            Ok(FnArg::Typed(x)) => x,
-            _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
-        };
-        cls.inputs.push(Pat::Type(arg))
-    } else {
-        abort!(
-            cls.inputs.span(),
-            "arguments are not allowed when using proc_macro"
-        )
-    }
-}
-
-fn add_move_async_closure(closure: &mut ExprClosure) {
-    closure.asyncness = None;
-    closure.capture = None;
-    if let Expr::Async(expr) = &mut *closure.body {
-        let mv = parse_str::<Token![move]>("move").expect("parse of `move` failed");
-        expr.capture = Some(mv);
-    } else {
-        let non_async = closure.body.clone();
-        let async_move_body =
-            parse2::<syn::ExprAsync>(quote! { async move { #non_async } })
-                .expect("async body parse failed");
-        closure.body = Box::new(syn::Expr::Async(async_move_body));
     }
 }

@@ -73,7 +73,7 @@ fn rc_yield_a_func_method_call() {
 fn rc_proc_macro_closure() {
     use genawaiter::{rc_producer, yield_};
 
-    let gen = Gen::new(rc_producer!(|| {
+    let gen = Gen::new(rc_producer!({
         let mut n = 1_u8;
         while n < 10 {
             yield_!(n);
@@ -89,7 +89,7 @@ fn rc_proc_macro_closure() {
 fn rc_proc_macro_closure_yield2() {
     use genawaiter::{rc_producer, yield_};
 
-    let gen = Gen::new(rc_producer!(|| {
+    let gen = Gen::new(rc_producer!({
         let mut n = 1_u8;
         while n < 10 {
             yield_!(n);

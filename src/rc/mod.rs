@@ -46,7 +46,7 @@ For closures
 # #[cfg(feature = "proc_macro")]
 # use genawaiter::{rc::Gen, rc_producer, yield_};
 # #[cfg(feature = "proc_macro")]
-let gen = Gen::new(rc_producer!(|| {
+let gen = Gen::new(rc_producer!({
         let mut n = 1_u8;
         while n < 10 {
             yield_!(n);

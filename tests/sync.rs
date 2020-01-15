@@ -56,7 +56,7 @@ fn sync_proc_macro_fn() {
 fn sync_proc_macro_closure() {
     use genawaiter::{sync_producer, yield_};
 
-    let gen = Gen::new(sync_producer!(|| {
+    let gen = Gen::new(sync_producer!({
         let mut n = 1_u8;
         while n < 10 {
             yield_!(n);

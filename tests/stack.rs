@@ -130,7 +130,7 @@ fn stack_yield_closure() {
     let gen = unsafe {
         Gen::new(
             &mut shelf,
-            stack_producer!(|| {
+            stack_producer!({
                 let mut n = 1_u8;
                 while n < 10 {
                     yield_!(n);
