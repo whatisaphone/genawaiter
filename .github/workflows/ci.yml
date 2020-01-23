@@ -32,7 +32,11 @@ jobs:
     strategy:
       matrix:
         toolchain: [1.39.0, nightly-2019-11-06]
-        features: ['', --features futures03]
+        features:
+          - ''
+          - --features futures03
+          - --features proc_macro
+          - --features futures03,proc_macro
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
