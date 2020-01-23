@@ -226,3 +226,47 @@ pub mod sync;
 #[cfg(test)]
 mod testing;
 mod waker;
+
+#[cfg(feature = "proc_macro")]
+use proc_macro_hack::proc_macro_hack;
+
+///
+#[cfg(feature = "proc_macro")]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::sync_producer;
+
+///
+#[cfg(feature = "proc_macro")]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::rc_producer;
+
+///
+#[cfg(feature = "proc_macro")]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::stack_producer;
+
+/// This macro is used to replace the keyword yield to
+/// avoid using nightly features when using any of the three
+/// `proc_macro_attributes` for easy generator definition.
+///
+/// # Example
+/// ```
+/// use genawaiter::{stack::producer_fn, yield_};
+///
+/// #[producer_fn(u8)]
+/// async fn odds() {
+///     for n in (1..).step_by(2).take_while(|n| *n < 10) {
+///         yield_!(n)
+///     }
+/// }
+/// ```
+#[cfg(feature = "proc_macro")]
+#[macro_export]
+macro_rules! yield_ {
+    ($val:tt) => {
+        compile_error!("forgot to use attribute")
+    };
+    (@emit => $co:expr, $value:expr) => {
+        $co.yield_($value).await;
+    };
+}

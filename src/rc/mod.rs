@@ -14,6 +14,52 @@ let mut generator = Gen::new(producer);
 
 # Examples
 
+## Using `proc_macro`
+
+A macro attribute can be used for functions `producer_fn`, and a function like macro
+for closures `rc_producer`. These are meant to be used with the `yield_` macro for
+easy definition of generators. The crate must be compiled with the `proc_macro`
+feature for these to be enabled.
+
+```toml
+genawaiter = {version = "0.2", features = ["proc_macro"] }
+```
+```
+# #[cfg(feature = "proc_macro")]
+use genawaiter::{rc::{Gen, producer_fn}, yield_};
+# #[cfg(feature = "proc_macro")]
+#[producer_fn(u8)]
+async fn odds() {
+    for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
+        yield_!(n);
+    }
+}
+# #[cfg(feature = "proc_macro")]
+# let gen = Gen::new(odds);
+# #[cfg(not(feature = "proc_macro"))]
+# let gen = vec![1, 3, 5, 7, 9];
+# let res = gen.into_iter().collect::<Vec<_>>();
+# assert_eq!(vec![1, 3, 5, 7, 9], res)
+```
+For closures
+```
+# #[cfg(feature = "proc_macro")]
+# use genawaiter::{rc::Gen, rc_producer, yield_};
+# #[cfg(feature = "proc_macro")]
+let gen = Gen::new(rc_producer!({
+        let mut n = 1_u8;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
+        }
+    }
+));
+# #[cfg(not(feature = "proc_macro"))]
+# let gen = vec![1, 3, 5, 7, 9];
+# let res = gen.into_iter().collect::<Vec<_>>();
+# assert_eq!(vec![1, 3, 5, 7, 9], res)
+```
+
 ## Using `Iterator`
 
 Generators implement `Iterator`, so you can use them in a for loop:
@@ -173,6 +219,9 @@ mod iterator;
 
 #[cfg(feature = "futures03")]
 mod stream;
+
+#[cfg(feature = "proc_macro")]
+pub use genawaiter_proc_macro::rc_producer_fn as producer_fn;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]

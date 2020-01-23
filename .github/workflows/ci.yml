@@ -26,7 +26,7 @@ jobs:
           profile: minimal
           components: clippy
           override: true
-      - run: cargo clippy --all-targets --features strict,futures03
+      - run: cargo clippy --all-targets --features strict,futures03,proc_macro
 
   test:
     strategy:

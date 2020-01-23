@@ -25,13 +25,15 @@ struct State<Y, R, F: Future> {
 impl<Y, R, F: Future> Shelf<Y, R, F> {
     /// Creates a new, empty `Shelf`.
     ///
-    /// _See the module-level docs for examples._
+    /// _See the module-level docs for examples.
+    #[must_use]
     pub fn new() -> Self {
         Self(mem::MaybeUninit::uninit())
     }
 }
 
 impl<Y, R, F: Future> Default for Shelf<Y, R, F> {
+    #[must_use]
     fn default() -> Self {
         Self::new()
     }
@@ -64,9 +66,10 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     ///
     /// # Safety
     ///
-    /// Do not let the `Co` object escape the scope of the generator. By time
-    /// the generator completes, the `Co` object should already have been
-    /// dropped. If this invariant is not upheld, memory unsafety will result.
+    /// Do not let the `Co` object escape the scope of the generator. By the
+    /// time the generator completes, the `Co` object should already have
+    /// been dropped. If this invariant is not upheld, memory unsafety will
+    /// result.
     ///
     /// Afaik, the Rust compiler [is not flexible enough][hrtb-thread] to let
     /// you express this invariant in the type system, but I would love to be

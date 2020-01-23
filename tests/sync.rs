@@ -3,7 +3,6 @@
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-use futures::executor::block_on_stream;
 use genawaiter::sync::{Co, Gen};
 
 async fn odd_numbers_less_than_ten(co: Co<i32>) {
@@ -29,7 +28,58 @@ fn test_boxed() {
 #[cfg(feature = "futures03")]
 #[test]
 fn test_stream() {
+    use futures::executor::block_on_stream;
+
     let gen = Gen::new(odd_numbers_less_than_ten);
     let xs: Vec<_> = block_on_stream(gen).collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
+}
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn sync_proc_macro_fn() {
+    use genawaiter::{sync::producer_fn, yield_};
+
+    #[producer_fn(u8)]
+    async fn odds() {
+        for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
+            yield_!(n);
+        }
+    }
+    let gen = Gen::new(odds);
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn sync_proc_macro_closure() {
+    use genawaiter::{sync_producer, yield_};
+
+    let gen = Gen::new(sync_producer!({
+        let mut n = 1_u8;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
+        }
+    }));
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
+
+#[cfg(feature = "proc_macro")]
+#[allow(clippy::let_unit_value)]
+#[test]
+fn sync_proc_macro_fn_method_call() {
+    use genawaiter::{sync::producer_fn, yield_};
+
+    #[producer_fn(u8)]
+    async fn odds() {
+        for n in (1_u8..).step_by(2).take_while(|&n| n < 10) {
+            let _ = yield_!(n).clone();
+        }
+    }
+    let gen = genawaiter::sync::Gen::new(odds);
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
