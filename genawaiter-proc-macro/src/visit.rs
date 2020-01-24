@@ -15,7 +15,9 @@ impl VisitMut for YieldReplace {
                 let tkns: TokenStream2 = syn::parse2(m.mac.tokens.clone())
                     .expect("parse of TokensStream failed");
 
-                let co_call = quote! { yield_!(@emit => __private_co_arg__, #tkns) };
+                let co_call = quote! {
+                    ::genawaiter::yield_!(@emit => __private_co_arg__, #tkns)
+                };
                 let cc: Expr = parse2(co_call).expect("parse of Expr failed");
                 *expr = cc;
             }

@@ -100,3 +100,19 @@ fn rc_proc_macro_closure_yield2() {
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], res)
 }
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn rc_convenience_macro() {
+    use genawaiter::gen_rc;
+
+    let g = gen_rc!({
+        let mut n = 1;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
+        }
+    });
+    let res = g.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}

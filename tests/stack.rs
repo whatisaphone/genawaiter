@@ -143,3 +143,19 @@ fn stack_yield_closure() {
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], res)
 }
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn stack_convenience_macro() {
+    use genawaiter::gen_stack;
+
+    gen_stack!(g, {
+        let mut n = 1;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
+        }
+    });
+    let res = g.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}

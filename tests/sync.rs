@@ -83,3 +83,19 @@ fn sync_proc_macro_fn_method_call() {
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn sync_convenience_macro() {
+    use genawaiter::gen_sync;
+
+    let g = gen_sync!({
+        let mut n = 1;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
+        }
+    });
+    let res = g.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
