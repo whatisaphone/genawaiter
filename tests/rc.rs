@@ -34,7 +34,7 @@ fn test_stream() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn rc_proc_macro_fn() {
-    use genawaiter::{rc::producer_fn, yield_};
+    use genawaiter::rc::producer_fn;
 
     #[producer_fn(u8)]
     async fn odds() {
@@ -50,7 +50,7 @@ fn rc_proc_macro_fn() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn rc_yield_a_func_method_call() {
-    use genawaiter::{rc::producer_fn, yield_};
+    use genawaiter::rc::producer_fn;
 
     fn pass_thru(n: u8) -> u8 {
         n
@@ -71,7 +71,7 @@ fn rc_yield_a_func_method_call() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn rc_proc_macro_closure() {
-    use genawaiter::{rc_producer, yield_};
+    use genawaiter::rc_producer;
 
     let gen = Gen::new(rc_producer!({
         let mut n = 1_u8;
@@ -87,7 +87,7 @@ fn rc_proc_macro_closure() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn rc_proc_macro_closure_yield2() {
-    use genawaiter::{rc_producer, yield_};
+    use genawaiter::rc_producer;
 
     let gen = Gen::new(rc_producer!({
         let mut n = 1_u8;
