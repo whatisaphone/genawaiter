@@ -211,6 +211,23 @@ pub use genawaiter_proc_macro::sync_producer_fn as producer_fn;
 #[cfg(test)]
 mod nightly_tests;
 
+#[cfg(feature = "proc_macro")]
+#[macro_export]
+macro_rules! gen {
+    ($func:expr) => {
+        let gen = ::genawaiter::sync::Gen::new(::genawaiter::sync_producer!({
+            $func
+        }))
+        gen
+    };
+    ($tokens:tt) => {
+        let gen = ::genawaiter::sync::Gen::new(::genawaiter::sync_producer!({
+            $tokens
+        }))
+        gen
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -223,6 +240,12 @@ mod tests {
         cell::{Cell, RefCell},
         future::Future,
     };
+
+    #[cfg(feature = "proc_macro")]
+    #[test]
+    fn sync_convenience_macro() {
+        
+    }
 
     async fn simple_producer(c: Co<i32>) -> &'static str {
         c.yield_(10).await;
