@@ -104,9 +104,9 @@ fn rc_proc_macro_closure_yield2() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn rc_convenience_macro() {
-    use genawaiter::gen_rc;
+    use genawaiter::rc::gen;
 
-    let g = gen_rc!({
+    let g = gen!({
         let mut n = 1;
         while n < 10 {
             yield_!(n);

@@ -222,6 +222,8 @@ mod stream;
 
 #[cfg(feature = "proc_macro")]
 pub use genawaiter_proc_macro::rc_producer_fn as producer_fn;
+#[cfg(feature = "proc_macro")]
+pub use tmp::gen_rc as gen;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]

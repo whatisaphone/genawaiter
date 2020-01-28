@@ -90,6 +90,7 @@ dependencies = [
  "futures-core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "genawaiter-proc-macro 0.0.0",
  "proc-macro-hack 0.5.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tmp 0.0.0",
 ]
 
 [[package]]
@@ -202,6 +203,10 @@ dependencies = [
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "tmp"
+version = "0.0.0"
 
 [[package]]
 name = "unicode-xid"
