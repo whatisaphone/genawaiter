@@ -17,6 +17,7 @@ include = ["Cargo.toml", "README-crates-io.md", "src/**/*.rs"]
 [dependencies]
 futures-core = { version = "0.3.1", optional = true }
 genawaiter-proc-macro = { path = "./genawaiter-proc-macro", optional = true }
+gen-macro = { path = "./gen-macro", optional = true }
 proc-macro-hack = { version = "0.5", optional = true }
 
 [workspace]
@@ -29,4 +30,4 @@ futures = "0.3.1"
 futures03 = ["futures-core"]
 nightly = []
 strict = []
-proc_macro = ["genawaiter-proc-macro", "proc-macro-hack"]
+proc_macro = ["genawaiter-proc-macro", "proc-macro-hack", "gen-macro"]

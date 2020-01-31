@@ -38,7 +38,7 @@ fn test_stream() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn sync_proc_macro_fn() {
-    use genawaiter::sync::producer_fn;
+    use genawaiter::{sync::producer_fn, yield_};
 
     #[producer_fn(u8)]
     async fn odds() {
@@ -54,7 +54,7 @@ fn sync_proc_macro_fn() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn sync_proc_macro_closure() {
-    use genawaiter::sync_producer;
+    use genawaiter::{sync_producer, yield_};
 
     let gen = Gen::new(sync_producer!({
         let mut n = 1_u8;
@@ -71,7 +71,7 @@ fn sync_proc_macro_closure() {
 #[allow(clippy::let_unit_value)]
 #[test]
 fn sync_proc_macro_fn_method_call() {
-    use genawaiter::sync::producer_fn;
+    use genawaiter::{sync::producer_fn, yield_};
 
     #[producer_fn(u8)]
     async fn odds() {
@@ -87,9 +87,9 @@ fn sync_proc_macro_fn_method_call() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn sync_convenience_macro() {
-    use genawaiter::gen_sync;
+    use genawaiter::{sync::gen, yield_};
 
-    let g = gen_sync!({
+    let g = gen!({
         let mut n = 1;
         while n < 10 {
             yield_!(n);

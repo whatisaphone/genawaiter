@@ -44,7 +44,7 @@ fn test_stream() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_proc_macro_fn() {
-    use genawaiter::stack::producer_fn;
+    use genawaiter::{stack::producer_fn, yield_};
     #[producer_fn(u8)]
     async fn odds() {
         for n in (1..).step_by(2).take_while(|&n| n < 10) {
@@ -59,7 +59,7 @@ fn stack_proc_macro_fn() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_yield_a_func_call() {
-    use genawaiter::stack::producer_fn;
+    use genawaiter::{stack::producer_fn, yield_};
 
     fn pass_thru(n: u8) -> u8 {
         n
@@ -80,7 +80,7 @@ fn stack_yield_a_func_call() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_yield_loop_break() {
-    use genawaiter::stack::producer_fn;
+    use genawaiter::{stack::producer_fn, yield_};
 
     #[producer_fn(u8)]
     async fn odds() {
@@ -105,7 +105,7 @@ fn stack_yield_loop_break() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_yield_match() {
-    use genawaiter::stack::producer_fn;
+    use genawaiter::{stack::producer_fn, yield_};
 
     #[producer_fn(u8)]
     async fn odds() {
@@ -124,7 +124,7 @@ fn stack_yield_match() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_yield_closure() {
-    use genawaiter::stack_producer;
+    use genawaiter::{stack_producer, yield_};
 
     let mut shelf = genawaiter::stack::Shelf::new();
     let gen = unsafe {
@@ -147,15 +147,15 @@ fn stack_yield_closure() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_convenience_macro() {
-    use genawaiter::gen_stack;
+    use genawaiter::{stack::gen, yield_};
 
-    gen_stack!(g, {
+    gen!(generator, {
         let mut n = 1;
         while n < 10 {
             yield_!(n);
             n += 2;
         }
     });
-    let res = g.into_iter().collect::<Vec<_>>();
+    let res = generator.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
