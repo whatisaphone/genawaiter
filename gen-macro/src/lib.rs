@@ -1,4 +1,3 @@
-pub fn test_it() {}
 /// Convenience macro to allow for the easy creation of rc generators.
 ///
 /// ## Examples
@@ -15,11 +14,10 @@ pub fn test_it() {}
 /// });
 /// # let res = g.into_iter().collect::<Vec<_>>();
 /// # assert_eq!(vec![1, 3, 5, 7, 9], res)
-#[cfg(feature = "proc_macro")]
 #[macro_export]
 macro_rules! gen_rc {
     ($func:expr) => {
-        $crate::rc::Gen::new($crate::rc_producer!({ $func }))
+        ::genawaiter::rc::Gen::new(::genawaiter::rc_producer!({ $func }))
     };
 }
 
@@ -39,13 +37,15 @@ macro_rules! gen_rc {
 /// });
 /// # let res = gen.into_iter().collect::<Vec<_>>();
 /// # assert_eq!(vec![1, 3, 5, 7, 9], res)
-#[cfg(feature = "proc_macro")]
 #[macro_export]
 macro_rules! gen_stack {
     ($name:ident, $func:expr) => {
-        let mut shelf = $crate::stack::Shelf::new();
+        let mut shelf = ::genawaiter::stack::Shelf::new();
         let mut generator = unsafe {
-            $crate::stack::Gen::new(&mut shelf, $crate::stack_producer!({ $func }))
+            ::genawaiter::stack::Gen::new(
+                &mut shelf,
+                ::genawaiter::stack_producer!({ $func }),
+            )
         };
         let $name = &mut generator;
     };
@@ -67,10 +67,9 @@ macro_rules! gen_stack {
 /// });
 /// # let res = g.into_iter().collect::<Vec<_>>();
 /// # assert_eq!(vec![1, 3, 5, 7, 9], res)
-#[cfg(feature = "proc_macro")]
 #[macro_export]
 macro_rules! gen_sync {
     ($func:expr) => {
-        $crate::sync::Gen::new($crate::sync_producer!({ $func }))
+        ::genawaiter::sync::Gen::new(::genawaiter::sync_producer!({ $func }))
     };
 }
