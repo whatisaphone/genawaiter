@@ -1,5 +1,5 @@
 [package]
-name = "gen-macro"
+name = "genawaiter-macro"
 version = "0.0.0"
 authors = ["Devin R <devin.ragotzy@gmail.com>"]
 license = "MIT/Apache-2.0"

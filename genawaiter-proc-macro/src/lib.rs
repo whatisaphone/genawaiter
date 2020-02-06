@@ -49,7 +49,7 @@ pub fn stack_producer(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as ExprBlock);
 
     YieldReplace.visit_expr_block_mut(&mut input);
-    // for some reason parsing as a PatType (correct for closures) fails
+    // FIXME for some reason parsing as a PatType (correct for closures) fails
     // the only way around is to destructure.
     let arg = match parse_str::<FnArg>(stack::CO_ARG) {
         Ok(FnArg::Typed(x)) => x,
@@ -138,16 +138,18 @@ mod stack {
         "__private_co_arg__: ::genawaiter::stack::Co<'_, ";
     pub(crate) const CO_ARG: &str =
         "__private_co_arg__: ::genawaiter::stack::Co<'_, _>";
+    pub(crate) const CO_ARG_RESUME: &str =
+        "__private_co_arg__: ::genawaiter::stack::Co<'_, _>";
 }
 
 mod sync {
     pub(crate) const CO_ARG_FN: &str = "__private_co_arg__: ::genawaiter::sync::Co<";
-    pub(crate) const CO_ARG: &str = "__private_co_arg__: ::genawaiter::sync::Co<_>";
+    pub(crate) const CO_ARG: &str = "__private_co_arg__: ::genawaiter::sync::Co<_, _>";
 }
 
 mod rc {
     pub(crate) const CO_ARG_FN: &str = "__private_co_arg__: ::genawaiter::rc::Co<";
-    pub(crate) const CO_ARG: &str = "__private_co_arg__: ::genawaiter::rc::Co<_>";
+    pub(crate) const CO_ARG: &str = "__private_co_arg__: ::genawaiter::rc::Co<_, _>";
 }
 
 /// Mutates the input `Punctuated<FnArg, Comma>` to a lifetimeless `co:

@@ -116,3 +116,20 @@ fn rc_convenience_macro() {
     let res = g.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn rc_convenience_macro_resume() {
+    use genawaiter::{rc::gen, yield_, GeneratorState};
+
+    let mut gen = gen!({
+        let resume_arg = yield_!(10_u8);
+        assert_eq!(resume_arg, "abc");
+        let resume_arg = yield_!(20_u8);
+        assert_eq!(resume_arg, "def");
+    });
+
+    assert_eq!(gen.resume_with("ignored"), GeneratorState::Yielded(10));
+    assert_eq!(gen.resume_with("abc"), GeneratorState::Yielded(20));
+    assert_eq!(gen.resume_with("def"), GeneratorState::Complete(()));
+}
