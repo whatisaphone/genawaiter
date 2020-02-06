@@ -49,7 +49,7 @@ pub fn stack_producer(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as ExprBlock);
 
     YieldReplace.visit_expr_block_mut(&mut input);
-    // FIXME for some reason parsing as a PatType (correct for closures) fails
+    // for some reason parsing as a PatType (correct for closures) fails
     // the only way around is to destructure.
     let arg = match parse_str::<FnArg>(stack::CO_ARG) {
         Ok(FnArg::Typed(x)) => x,
@@ -60,6 +60,26 @@ pub fn stack_producer(input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
+/// Function like `proc_macro` to easily and safely create generators from
+/// closures on the stack. This adds a second type parameter to the `Co`
+/// argument, resulting in` Co<'_, _, _>`, this is to be used whenever there is
+/// a `resume_with` argument.
+#[proc_macro_hack]
+#[proc_macro_error]
+pub fn stack_producer_resume(input: TokenStream) -> TokenStream {
+    let mut input = parse_macro_input!(input as ExprBlock);
+
+    YieldReplace.visit_expr_block_mut(&mut input);
+    // for some reason parsing as a PatType (correct for closures) fails
+    // the only way around is to destructure.
+    let arg = match parse_str::<FnArg>(stack::CO_ARG_RESUME) {
+        Ok(FnArg::Typed(x)) => x,
+        _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
+    };
+
+    let tokens = quote! { |#arg| async move #input };
+    tokens.into()
+}
 /// Macro attribute to turn an `async fn` into a generator that can be
 /// sent across threads.
 #[proc_macro_attribute]
@@ -139,7 +159,7 @@ mod stack {
     pub(crate) const CO_ARG: &str =
         "__private_co_arg__: ::genawaiter::stack::Co<'_, _>";
     pub(crate) const CO_ARG_RESUME: &str =
-        "__private_co_arg__: ::genawaiter::stack::Co<'_, _>";
+        "__private_co_arg__: ::genawaiter::stack::Co<'_, _, _>";
 }
 
 mod sync {

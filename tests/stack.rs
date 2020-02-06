@@ -165,7 +165,7 @@ fn stack_convenience_macro() {
 fn stack_convenience_macro_resume() {
     use genawaiter::{stack::gen, yield_, GeneratorState};
 
-    gen!(gen, {
+    gen!(gen resume {
         let resume_arg = yield_!(10_u8);
         assert_eq!(resume_arg, "abc");
         let resume_arg = yield_!(20_u8);
