@@ -245,6 +245,11 @@ pub use genawaiter_proc_macro::rc_producer;
 #[proc_macro_hack]
 pub use genawaiter_proc_macro::stack_producer;
 
+///
+#[cfg(feature = "proc_macro")]
+#[proc_macro_hack]
+pub use genawaiter_proc_macro::stack_producer_resume;
+
 /// This macro is used to replace the keyword yield to
 /// avoid using nightly features when using any of the three
 /// `proc_macro_attributes` for easy generator definition.

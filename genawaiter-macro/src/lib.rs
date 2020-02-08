@@ -49,6 +49,16 @@ macro_rules! gen_stack {
         };
         let $name = &mut generator;
     };
+    ($name:ident resume $func:expr) => {
+        let mut shelf = ::genawaiter::stack::Shelf::new();
+        let mut generator = unsafe {
+            ::genawaiter::stack::Gen::new(
+                &mut shelf,
+                ::genawaiter::stack_producer_resume!({ $func }),
+            )
+        };
+        let $name = &mut generator;
+    };
 }
 
 /// Convenience macro to allow for the easy creation of sync generators.
