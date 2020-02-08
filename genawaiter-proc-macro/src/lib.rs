@@ -49,7 +49,7 @@ pub fn stack_producer(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as ExprBlock);
 
     YieldReplace.visit_expr_block_mut(&mut input);
-    // FIXME for some reason parsing as a PatType (correct for closures) fails
+    // for some reason parsing as a PatType (correct for closures) fails
     // the only way around is to destructure.
     let arg = match parse_str::<FnArg>(stack::CO_ARG) {
         Ok(FnArg::Typed(x)) => x,
