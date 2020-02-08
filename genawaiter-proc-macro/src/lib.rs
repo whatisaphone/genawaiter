@@ -138,8 +138,6 @@ mod stack {
         "__private_co_arg__: ::genawaiter::stack::Co<'_, ";
     pub(crate) const CO_ARG: &str =
         "__private_co_arg__: ::genawaiter::stack::Co<'_, _>";
-    pub(crate) const CO_ARG_RESUME: &str =
-        "__private_co_arg__: ::genawaiter::stack::Co<'_, _>";
 }
 
 mod sync {
