@@ -137,7 +137,7 @@ mod stack {
     pub(crate) const CO_ARG_FN: &str =
         "__private_co_arg__: ::genawaiter::stack::Co<'_, ";
     pub(crate) const CO_ARG: &str =
-        "__private_co_arg__: ::genawaiter::stack::Co<'_, _>";
+        "__private_co_arg__: ::genawaiter::stack::Co<'_, _, _>";
 }
 
 mod sync {
