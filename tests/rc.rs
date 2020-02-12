@@ -100,3 +100,36 @@ fn rc_proc_macro_closure_yield2() {
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], res)
 }
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn rc_convenience_macro() {
+    use genawaiter::{rc::gen, yield_};
+
+    let g = gen!({
+        let mut n = 1;
+        while n < 10 {
+            yield_!(n);
+            n += 2;
+        }
+    });
+    let res = g.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
+
+#[cfg(feature = "proc_macro")]
+#[test]
+fn rc_convenience_macro_resume() {
+    use genawaiter::{rc::gen, yield_, GeneratorState};
+
+    let mut gen = gen!({
+        let resume_arg = yield_!(10_u8);
+        assert_eq!(resume_arg, "abc");
+        let resume_arg = yield_!(20_u8);
+        assert_eq!(resume_arg, "def");
+    });
+
+    assert_eq!(gen.resume_with("ignored"), GeneratorState::Yielded(10));
+    assert_eq!(gen.resume_with("abc"), GeneratorState::Yielded(20));
+    assert_eq!(gen.resume_with("def"), GeneratorState::Complete(()));
+}
