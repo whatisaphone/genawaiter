@@ -26,7 +26,7 @@ jobs:
           profile: minimal
           components: clippy
           override: true
-      - run: cargo clippy --all-targets --features strict,futures03,proc_macro
+      - run: cargo clippy --all-targets --features strict,futures03
 
   test:
     strategy:
@@ -45,4 +45,4 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           profile: minimal
           override: true
-      - run: cargo test ${{ matrix.features }}
+      - run: cargo test --no-default-features ${{ matrix.features }}
