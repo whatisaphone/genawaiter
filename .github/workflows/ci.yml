@@ -5,6 +5,11 @@ on: [push, pull_request]
 
 jobs:
   fmt:
+    strategy:
+      matrix:
+        manifest:
+          - ''
+          - --manifest-path examples/error_propagation/Cargo.toml
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -14,9 +19,15 @@ jobs:
           profile: minimal
           components: rustfmt
           override: true
-      - run: cargo fmt -- --check
+      - run: cargo fmt ${{ matrix.manifest }} -- --check
 
   check:
+    strategy:
+      matrix:
+        args:
+          - --all-targets --features strict,futures03
+          - --manifest-path examples/error_propagation/Cargo.toml
+            --all-targets --features strict
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -26,7 +37,7 @@ jobs:
           profile: minimal
           components: clippy
           override: true
-      - run: cargo clippy --all-targets --features strict,futures03
+      - run: cargo clippy ${{ matrix.args }}
 
   test:
     strategy:

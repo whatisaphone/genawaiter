@@ -1,9 +1,14 @@
-/// This example demonstrates error propagation with generators.
-///
-/// See [fallible-iterator's docs][fitd] for discussion about the same problem,
-/// in the context of iterators.
-///
-/// [fitd]: https://docs.rs/fallible-iterator/0.2.1/fallible_iterator/
+//! This example demonstrates error propagation with generators.
+//!
+//! See [fallible-iterator's docs][fitd] for discussion about the same problem,
+//! but in the context of iterators.
+//!
+//! [fitd]: https://docs.rs/fallible-iterator/0.2.1/fallible_iterator/
+
+#![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
+#![warn(clippy::pedantic)]
+#![cfg_attr(feature = "strict", deny(warnings))]
+
 use genawaiter::{sync::gen, yield_};
 use std::error::Error;
 

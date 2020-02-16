@@ -1,0 +1,16 @@
+# https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package]
+name = "genawaiter_example_error_propagation"
+version = "0.0.0"
+authors = ["John Simon <john@whatisaph.one>"]
+edition = "2018"
+license = "MIT"
+
+[workspace]
+
+[dependencies]
+genawaiter = { path = "../.." }
+
+[features]
+strict = []
