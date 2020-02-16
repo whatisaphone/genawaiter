@@ -6,12 +6,15 @@ You can create a basic generator with [`let_gen!`] and [`yield_!`].
 [`let_gen!`]: macro.let_gen.html
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{stack::let_gen, yield_};
 #
 let_gen!(my_generator, {
     yield_!(10);
 });
 # my_generator.resume();
+# }
 ```
 
 If you don't like macros, you can use the low-level API directly, though note that this
@@ -35,6 +38,8 @@ let mut my_generator = unsafe { Gen::new(&mut shelf, my_producer) };
 Generators implement `Iterator`, so you can use them in a for loop:
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 use genawaiter::{stack::let_gen, yield_};
 
 let_gen!(odds_under_ten, {
@@ -51,11 +56,14 @@ for num in odds_under_ten {
     # test.push(num);
 }
 # assert_eq!(test, [1, 3, 5, 7, 9]);
+# }
 ```
 
 ## Collecting into a `Vec`
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{stack::let_gen, yield_};
 #
 # let_gen!(odds_under_ten, {
@@ -64,6 +72,7 @@ for num in odds_under_ten {
 #
 let xs: Vec<_> = odds_under_ten.into_iter().collect();
 assert_eq!(xs, [1, 3, 5, 7, 9]);
+# }
 ```
 
 ## A generator is a closure
@@ -71,6 +80,8 @@ assert_eq!(xs, [1, 3, 5, 7, 9]);
 Like any closure, you can capture values from outer scopes.
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{stack::let_gen, yield_, GeneratorState};
 #
 let two = 2;
@@ -78,11 +89,14 @@ let_gen!(multiply, {
     yield_!(10 * two);
 });
 assert_eq!(multiply.resume(), GeneratorState::Yielded(20));
+# }
 ```
 
 ## Using `resume()`
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{stack::let_gen, yield_, GeneratorState};
 #
 # let_gen!(odds_under_ten, {
@@ -95,6 +109,7 @@ assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(5));
 assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(7));
 assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(9));
 assert_eq!(odds_under_ten.resume(), GeneratorState::Complete(()));
+# }
 ```
 
 ## Passing resume arguments
@@ -106,6 +121,8 @@ value is sent, there is no future being awaited inside the generator, so there i
 place the value could go where the generator could observe it.
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{stack::let_gen, yield_};
 #
 let_gen!(check_numbers, {
@@ -119,6 +136,7 @@ let_gen!(check_numbers, {
 check_numbers.resume_with(0);
 check_numbers.resume_with(1);
 check_numbers.resume_with(2);
+# }
 ```
 
 ## Returning a completion value
@@ -127,6 +145,8 @@ You can return a completion value with a different type than the values that are
 yielded.
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{stack::let_gen, yield_, GeneratorState};
 #
 let_gen!(numbers_then_string, {
@@ -138,11 +158,14 @@ let_gen!(numbers_then_string, {
 assert_eq!(numbers_then_string.resume(), GeneratorState::Yielded(10));
 assert_eq!(numbers_then_string.resume(), GeneratorState::Yielded(20));
 assert_eq!(numbers_then_string.resume(), GeneratorState::Complete("done!"));
+# }
 ```
 
 ## Defining a reusable producer function
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{stack::{let_gen_using, producer_fn}, yield_, GeneratorState};
 #
 #[producer_fn(u8)]
@@ -152,6 +175,7 @@ async fn produce() {
 
 let_gen_using!(gen, produce);
 assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+# }
 ```
 
 ## Using the low-level API

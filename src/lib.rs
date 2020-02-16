@@ -49,6 +49,8 @@ generator using a macro from the `gen` family:
 - [`sync::gen!`](sync/macro.gen.html)
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{sync::gen, yield_};
 #
 let count_to_ten = gen!({
@@ -59,6 +61,7 @@ let count_to_ten = gen!({
 
 # let result: Vec<_> = count_to_ten.into_iter().collect();
 # assert_eq!(result, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+# }
 ```
 
 To re-use logic between multiple generators, you can use a macro from the `producer`
@@ -69,6 +72,8 @@ family, and then pass the producer to `Gen::new`.
 - [`sync_producer!`] and [`Gen::new`](sync::Gen::new)
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{sync::Gen, sync_producer as producer, yield_};
 #
 let count_producer = producer!({
@@ -81,6 +86,7 @@ let count_to_ten = Gen::new(count_producer);
 
 # let result: Vec<_> = count_to_ten.into_iter().collect();
 # assert_eq!(result, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+# }
 ```
 
 If neither of these offers enough control for you, you can always skip the macros and
@@ -117,6 +123,8 @@ ways:
   `GeneratorState::Yielded`.
 
   ```rust
+  # #[cfg(feature = "proc_macro")]
+  # fn feature_gate() {
   # use genawaiter::{sync::gen, yield_, GeneratorState};
   #
   let mut generator = gen!({
@@ -124,12 +132,15 @@ ways:
   });
   let ten = generator.resume();
   assert_eq!(ten, GeneratorState::Yielded(10));
+  # }
   ```
 
 - Treat it as an iterator. For this to work, both the resume and completion types must
   be `()` .
 
   ```rust
+  # #[cfg(feature = "proc_macro")]
+  # fn feature_gate() {
   # use genawaiter::{sync::gen, yield_};
   #
   let generator = gen!({
@@ -137,6 +148,7 @@ ways:
   });
   let xs: Vec<_> = generator.into_iter().collect();
   assert_eq!(xs, [10]);
+  # }
   ```
 
 ## Resume
@@ -145,6 +157,8 @@ You can also send values back into the generator, by using `resume_with`. The ge
 receives them from the future returned by `yield_`.
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{sync::gen, yield_};
 #
 let mut printer = gen!({
@@ -155,6 +169,7 @@ let mut printer = gen!({
 });
 printer.resume_with("hello");
 printer.resume_with("world");
+# }
 ```
 
 ## Completion
@@ -163,6 +178,8 @@ A generator can produce one final value upon completion, by returning it from th
 function. The consumer will receive this value as a `GeneratorState::Complete`.
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# fn feature_gate() {
 # use genawaiter::{sync::gen, yield_, GeneratorState};
 #
 let mut generator = gen!({
@@ -171,6 +188,7 @@ let mut generator = gen!({
 });
 assert_eq!(generator.resume(), GeneratorState::Yielded(10));
 assert_eq!(generator.resume(), GeneratorState::Complete("done"));
+# }
 ```
 
 # Async generators
@@ -186,10 +204,11 @@ genawaiter = { version = "...", features = ["futures03"] }
 ```
 
 ```rust
+# #[cfg(all(feature = "proc_macro", feature = "futures03"))]
+# fn feature_gate() {
 # use futures::executor::block_on_stream;
 # use genawaiter::{sync::gen, yield_};
 #
-# #[cfg(feature = "futures03")] {
 async fn async_one() -> i32 { 1 }
 async fn async_two() -> i32 { 2 }
 
@@ -209,10 +228,11 @@ Async generators also provide a `async_resume` method for lower-level control. (
 works even without the `futures03` feature.)
 
 ```rust
+# #[cfg(feature = "proc_macro")]
+# async fn feature_gate() {
 # use genawaiter::{sync::gen, yield_, GeneratorState};
 # use std::task::Poll;
 #
-# async fn x() {
 # let mut gen = gen!({
 #     yield_!(10);
 # });
