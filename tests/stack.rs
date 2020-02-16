@@ -1,5 +1,5 @@
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
-#![warn(missing_docs, clippy::pedantic)]
+#![warn(clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
 use genawaiter::stack::{let_gen_using, Co, Gen, Shelf};
