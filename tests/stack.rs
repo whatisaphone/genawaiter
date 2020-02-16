@@ -1,12 +1,8 @@
-#![cfg_attr(feature = "nightly", feature(async_await, async_closure))]
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
 #![warn(missing_docs, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-use genawaiter::{
-    generator_mut,
-    stack::{Co, Gen, Shelf},
-};
+use genawaiter::stack::{let_gen_using, Co, Gen, Shelf};
 
 async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
     for n in (1..).step_by(2).take_while(|&n| n < 10) {
@@ -16,7 +12,7 @@ async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
 
 #[test]
 fn test_basic() {
-    generator_mut!(gen, odd_numbers_less_than_ten);
+    let_gen_using!(gen, odd_numbers_less_than_ten);
 
     let xs: Vec<_> = gen.into_iter().collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
@@ -36,7 +32,7 @@ fn test_shelf() {
 fn test_stream() {
     use futures::executor::block_on_stream;
 
-    generator_mut!(gen, odd_numbers_less_than_ten);
+    let_gen_using!(gen, odd_numbers_less_than_ten);
     let xs: Vec<_> = block_on_stream(gen).collect();
     assert_eq!(xs, [1, 3, 5, 7, 9]);
 }
@@ -51,7 +47,7 @@ fn stack_proc_macro_fn() {
             let _x = yield_!(n);
         }
     }
-    generator_mut!(gen, odds);
+    let_gen_using!(gen, odds);
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
@@ -72,7 +68,7 @@ fn stack_yield_a_func_call() {
             }
         }
     }
-    generator_mut!(gen, odds);
+    let_gen_using!(gen, odds);
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
@@ -97,7 +93,7 @@ fn stack_yield_loop_break() {
             }
         }
     }
-    generator_mut!(gen, odds);
+    let_gen_using!(gen, odds);
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
@@ -116,7 +112,7 @@ fn stack_yield_match() {
             }
         }
     }
-    generator_mut!(gen, odds);
+    let_gen_using!(gen, odds);
     let res = gen.into_iter().collect::<Vec<_>>();
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
@@ -146,9 +142,9 @@ fn stack_yield_closure() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_convenience_macro() {
-    use genawaiter::{stack::gen, yield_};
+    use genawaiter::{stack::let_gen, yield_};
 
-    gen!(generator, {
+    let_gen!(generator, {
         let mut n = 1;
         while n < 10 {
             yield_!(n);
@@ -162,9 +158,9 @@ fn stack_convenience_macro() {
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_convenience_macro_resume() {
-    use genawaiter::{stack::gen, yield_, GeneratorState};
+    use genawaiter::{stack::let_gen, yield_, GeneratorState};
 
-    gen!(gen, {
+    let_gen!(gen, {
         let resume_arg = yield_!(10_u8);
         assert_eq!(resume_arg, "abc");
         let resume_arg = yield_!(20_u8);

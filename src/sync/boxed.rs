@@ -22,18 +22,18 @@ impl<Y, R, C> GenBoxed<Y, R, C> {
     /// # use genawaiter::sync::{Co, Gen, GenBoxed};
     /// # use std::{future::Future, pin::Pin};
     /// #
-    /// # async fn start(co: Co<i32>) {
+    /// # async fn producer(co: Co<i32>) {
     /// #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
     /// # }
     /// #
-    /// let _: GenBoxed<i32> = Gen::new_boxed(|co| start(co));
-    /// let _: GenBoxed<i32> = Gen::new(|co| Box::pin(start(co)));
+    /// let _: GenBoxed<i32> = Gen::new_boxed(|co| producer(co));
+    /// let _: GenBoxed<i32> = Gen::new(|co| Box::pin(producer(co)));
     /// ```
-    pub fn new_boxed<F>(start: impl FnOnce(Co<Y, R>) -> F) -> Self
+    pub fn new_boxed<F>(producer: impl FnOnce(Co<Y, R>) -> F) -> Self
     where
         F: Future<Output = C> + Send + 'static,
     {
-        Self::new(|co| Box::pin(start(co)))
+        Self::new(|co| Box::pin(producer(co)))
     }
 }
 

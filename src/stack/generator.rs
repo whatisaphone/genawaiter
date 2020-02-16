@@ -11,7 +11,7 @@ use std::{future::Future, mem, pin::Pin, ptr};
 /// It's called "Shelf", rather than "State", to avoid confusion with the
 /// `GeneratorState` enum.
 ///
-/// _See the module-level docs for examples._
+/// [_See the module-level docs for examples._](.)
 // Safety: The lifetime of the data is controlled by a `Gen`, which constructs
 // it in place, and holds a mutable reference right up until dropping it in
 // place. Thus, the data inside is pinned and can never be moved.
@@ -25,7 +25,7 @@ struct State<Y, R, F: Future> {
 impl<Y, R, F: Future> Shelf<Y, R, F> {
     /// Creates a new, empty `Shelf`.
     ///
-    /// _See the module-level docs for examples.
+    /// [_See the module-level docs for examples._](.)
     #[must_use]
     pub fn new() -> Self {
         Self(mem::MaybeUninit::uninit())
@@ -41,7 +41,7 @@ impl<Y, R, F: Future> Default for Shelf<Y, R, F> {
 
 /// This is a generator which can be stack-allocated.
 ///
-/// _See the module-level docs for examples._
+/// [_See the module-level docs for examples._](.)
 pub struct Gen<'s, Y, R, F: Future> {
     state: Pin<&'s mut State<Y, R, F>>,
 }
@@ -62,14 +62,12 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     ///
     /// Typically this exchange will happen in the context of an `async fn`.
     ///
-    /// _See the module-level docs for examples._
-    ///
     /// # Safety
     ///
-    /// Do not let the `Co` object escape the scope of the generator. By the
-    /// time the generator completes, the `Co` object should already have
-    /// been dropped. If this invariant is not upheld, memory unsafety will
-    /// result.
+    /// The `Co` object must not outlive the returned `Gen`. By time the
+    /// generator completes (i.e., by time the producer's Future returns
+    /// `Poll::Ready`), the `Co` object should already have been dropped. If
+    /// this invariant is not upheld, memory unsafety can result.
     ///
     /// Afaik, the Rust compiler [is not flexible enough][hrtb-thread] to let
     /// you express this invariant in the type system, but I would love to be
@@ -89,19 +87,19 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     /// ```
     pub unsafe fn new(
         shelf: &'s mut Shelf<Y, R, F>,
-        start: impl FnOnce(Co<'s, Y, R>) -> F,
+        producer: impl FnOnce(Co<'s, Y, R>) -> F,
     ) -> Self {
-        // Safety: Build the struct in place, by assigning the fields in order.
+        // Safety: Build the struct in place, by writing each field in place.
         let p = &mut *shelf.0.as_mut_ptr() as *mut State<Y, R, F>;
 
         let airlock = Airlock::default();
         ptr::write(&mut (*p).airlock, airlock);
 
-        let future = start(Co::new(&(*p).airlock));
+        let future = producer(Co::new(&(*p).airlock));
         ptr::write(&mut (*p).future, future);
 
         // Safety: the state can never be moved again, because we store it inside a
-        // `Pin` until `Gen::drop`, where the contents are immediately dropped.
+        // `Pin` until `Gen::drop`, where the contents are dropped in place.
         let state = Pin::new_unchecked(shelf.0.assume_init_get_mut());
         Self { state }
     }
@@ -115,7 +113,7 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
     ///
-    /// _See the module-level docs for examples._
+    /// [_See the module-level docs for examples._](.)
     pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
         let (future, airlock) = self.project();
         airlock.replace(Next::Resume(arg));
@@ -124,7 +122,8 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
 
     fn project(&mut self) -> (Pin<&mut F>, &Airlock<Y, R>) {
         unsafe {
-            // Safety: `future` is pinned, but never moved. `airlock` is never pinned.
+            // Safety: This is a pin projection. `future` is pinned, but never moved.
+            // `airlock` is never pinned.
             let state = self.state.as_mut().get_unchecked_mut();
 
             let future = Pin::new_unchecked(&mut state.future);
@@ -136,8 +135,13 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
 
 impl<'s, Y, R, F: Future> Drop for Gen<'s, Y, R, F> {
     fn drop(&mut self) {
-        // Safety: Drop the struct in place, by dropping the fields in reverse order.
-        // Since we drop the fields in place, the `Pin` invariants are not violated.
+        // Safety: `state` is a `MaybeUninit` which is guaranteed to be initialized,
+        // because the only way to construct a `Gen` is with `Gen::new`, which
+        // initializes it.
+        //
+        // Drop `state` in place, by dropping each field in place. Drop `future` first,
+        // since it likely contains a reference to `airlock` (through the `co` object).
+        // Since we drop everything in place, the `Pin` invariants are not violated.
         unsafe {
             let state = self.state.as_mut().get_unchecked_mut();
             ptr::drop_in_place(&mut state.future);
@@ -152,7 +156,7 @@ impl<'s, Y, F: Future> Gen<'s, Y, (), F> {
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
     ///
-    /// _See the module-level docs for examples._
+    /// [_See the module-level docs for examples._](.)
     pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
         self.resume_with(())
     }
@@ -163,7 +167,7 @@ impl<'s, Y, F: Future> Gen<'s, Y, (), F> {
     /// If the generator yields a value, `Poll::Ready(Yielded)` is returned.
     /// Otherwise, `Poll::Ready(Completed)` is returned.
     ///
-    /// _See the module-level docs for examples._
+    /// [_See the module-level docs for examples._](.)
     pub fn async_resume(
         &mut self,
     ) -> impl Future<Output = GeneratorState<Y, F::Output>> + '_ {

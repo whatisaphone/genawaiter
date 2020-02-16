@@ -9,3 +9,7 @@ repository = "https://github.com/whatisaphone/genawaiter"
 readme = "../README.md"
 keywords = ["generator", "yield", "coroutine", "async", "await"]
 categories = ["asynchronous", "concurrency", "rust-patterns"]
+
+[features]
+strict = []
+proc_macro = []

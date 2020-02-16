@@ -7,7 +7,7 @@ use std::{future::Future, pin::Pin};
 
 /// This is a generator which can be shared between threads.
 ///
-/// _See the module-level docs for examples._
+/// [_See the module-level docs for examples._](.)
 pub struct Gen<Y, R, F: Future> {
     airlock: Airlock<Y, R>,
     future: Pin<Box<F>>,
@@ -25,10 +25,10 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     ///
     /// Typically this exchange will happen in the context of an `async fn`.
     ///
-    /// _See the module-level docs for examples._
-    pub fn new(start: impl FnOnce(Co<Y, R>) -> F) -> Self {
+    /// [_See the module-level docs for examples._](.)
+    pub fn new(producer: impl FnOnce(Co<Y, R>) -> F) -> Self {
         let airlock = Airlock::default();
-        let future = { Box::pin(start(Co::new(airlock.clone()))) };
+        let future = { Box::pin(producer(Co::new(airlock.clone()))) };
         Self { airlock, future }
     }
 
@@ -41,7 +41,7 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
     ///
-    /// _See the module-level docs for examples._
+    /// [_See the module-level docs for examples._](.)
     pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
         self.airlock.replace(Next::Resume(arg));
         advance(self.future.as_mut(), &self.airlock)
@@ -54,7 +54,7 @@ impl<Y, F: Future> Gen<Y, (), F> {
     /// If the generator yields a value, `Yielded` is returned. Otherwise,
     /// `Completed` is returned.
     ///
-    /// _See the module-level docs for examples._
+    /// [_See the module-level docs for examples._](.)
     pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
         self.resume_with(())
     }
@@ -65,7 +65,7 @@ impl<Y, F: Future> Gen<Y, (), F> {
     /// If the generator yields a value, `Poll::Ready(Yielded)` is returned.
     /// Otherwise, `Poll::Ready(Completed)` is returned.
     ///
-    /// _See the module-level docs for examples._
+    /// [_See the module-level docs for examples._](.)
     pub fn async_resume(
         &mut self,
     ) -> impl Future<Output = GeneratorState<Y, F::Output>> + '_ {

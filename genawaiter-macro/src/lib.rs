@@ -1,85 +1,51 @@
-/// Convenience macro to allow for the easy creation of rc generators.
-///
-/// ## Examples
-///
-/// ```
-/// use genawaiter::gen_rc;
-///
-/// let g = gen_rc!({
-/// let mut n = 1;
-///     while n < 10 {
-///         yield_!(n);
-///         n += 2;
-///     }
-/// });
-/// # let res = g.into_iter().collect::<Vec<_>>();
-/// # assert_eq!(vec![1, 3, 5, 7, 9], res)
+#![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
+#![warn(clippy::cargo, clippy::pedantic)]
+#![cfg_attr(feature = "strict", deny(warnings))]
+
 #[macro_export]
-macro_rules! gen_rc {
-    ($func:expr) => {
-        ::genawaiter::rc::Gen::new(::genawaiter::rc_producer!({ $func }))
+#[cfg(feature = "proc_macro")]
+macro_rules! stack_let_gen {
+    ($name:ident, $body:expr $(,)?) => {
+        ::genawaiter::stack::let_gen_using!(
+            $name,
+            ::genawaiter::stack_producer!($body),
+        );
     };
 }
 
-/// Convenience macro to allow for the easy creation of stack generators.
-///
-/// ## Examples
-///
-/// ```
-/// use genawaiter::gen_stack;
-///
-/// genawaiter::gen_stack!(gen, {
-/// let mut n = 1;
-///     while n < 10 {
-///         yield_!(n);
-///         n += 2;
-///     }
-/// });
-/// # let res = gen.into_iter().collect::<Vec<_>>();
-/// # assert_eq!(vec![1, 3, 5, 7, 9], res)
 #[macro_export]
-macro_rules! gen_stack {
-    ($name:ident, $func:expr) => {
+macro_rules! stack_let_gen_using {
+    ($name:ident, $producer:expr $(,)?) => {
+        // Safety: The goal here is to ensure the safety invariants of `Gen::new`, i.e.,
+        // the lifetime of the `Co` argument (in `$producer`) must not outlive `shelf`
+        // or `generator`.
+        //
+        // We create two variables, `shelf` and `generator`, which cannot be named by
+        // user-land code (because of macro hygiene). Because they are declared in the
+        // same scope, and cannot be dropped before the end of the scope (because they
+        // cannot be named), they have equivalent lifetimes. The type signature of
+        // `Gen::new` ties the lifetime of `co` to that of `shelf`. This means it has
+        // the same lifetime as `generator`, and so the invariant of `Gen::new` cannot
+        // be violated.
         let mut shelf = ::genawaiter::stack::Shelf::new();
-        let mut generator = unsafe {
-            ::genawaiter::stack::Gen::new(
-                &mut shelf,
-                ::genawaiter::stack_producer!({ $func }),
-            )
-        };
-        let $name = &mut generator;
-    };
-    ($name:ident resume $func:expr) => {
-        let mut shelf = ::genawaiter::stack::Shelf::new();
-        let mut generator = unsafe {
-            ::genawaiter::stack::Gen::new(
-                &mut shelf,
-                ::genawaiter::stack_producer_resume!({ $func }),
-            )
-        };
+        let mut generator =
+            unsafe { ::genawaiter::stack::Gen::new(&mut shelf, $producer) };
         let $name = &mut generator;
     };
 }
 
-/// Convenience macro to allow for the easy creation of sync generators.
-///
-/// ## Examples
-///
-/// ```
-/// use genawaiter::gen_sync;
-///
-/// let g = genawaiter::gen_sync!({
-/// let mut n = 1;
-///     while n < 10 {
-///         yield_!(n);
-///         n += 2;
-///     }
-/// });
-/// # let res = g.into_iter().collect::<Vec<_>>();
-/// # assert_eq!(vec![1, 3, 5, 7, 9], res)
 #[macro_export]
-macro_rules! gen_sync {
-    ($func:expr) => {
-        ::genawaiter::sync::Gen::new(::genawaiter::sync_producer!({ $func }))
+#[cfg(feature = "proc_macro")]
+macro_rules! rc_gen {
+    ($body:expr) => {
+        ::genawaiter::rc::Gen::new(::genawaiter::rc_producer!($body))
+    };
+}
+
+#[macro_export]
+#[cfg(feature = "proc_macro")]
+macro_rules! sync_gen {
+    ($body:expr) => {
+        ::genawaiter::sync::Gen::new(::genawaiter::sync_producer!($body))
     };
 }

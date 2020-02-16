@@ -38,5 +38,5 @@ impl<Y, R> core::Airlock for Airlock<Y, R> {
 /// "Co" can stand for either _controller_ or _coroutine_, depending on how
 /// theoretical you are feeling.
 ///
-/// _See the module-level docs for examples._
+/// [_See the module-level docs for examples._](.)
 pub type Co<Y, R = ()> = core::Co<Airlock<Y, R>>;

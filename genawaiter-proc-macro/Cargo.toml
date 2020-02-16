@@ -16,16 +16,9 @@ proc-macro = true
 [dependencies]
 quote = "1.0"
 proc-macro2 = "1.0"
-syn = {version = "1.0", features = [
-    "parsing",
-    # "extra-traits",
-    "full",
-    "visit",
-    "visit-mut",
-    "clone-impls"
-] }
+syn = { version = "1.0", features = ["visit-mut"] }
 proc-macro-error = "0.4"
 proc-macro-hack = "0.5"
 
 [features]
-proc_macro_example = []
+strict = []

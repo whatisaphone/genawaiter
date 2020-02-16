@@ -12,9 +12,8 @@ impl<Y, F: Future<Output = ()>> Stream for Gen<Y, (), F> {
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
     ) -> Poll<Option<Self::Item>> {
-        let mut fut = self.async_resume();
-        // Safety: This is just `pin_mut!(fut)`.
-        let fut = unsafe { Pin::new_unchecked(&mut fut) };
+        let fut = self.async_resume();
+        pin_mut!(fut);
         match fut.poll(cx) {
             Poll::Ready(GeneratorState::Yielded(x)) => Poll::Ready(Some(x)),
             Poll::Ready(GeneratorState::Complete(())) => Poll::Ready(None),

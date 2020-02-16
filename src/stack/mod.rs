@@ -1,23 +1,32 @@
 /*!
 This module implements a generator which doesn't allocate.
 
-You can create a generator with the [`generator_mut!`] macro:
+You can create a basic generator with [`let_gen!`] and [`yield_!`].
+
+[`let_gen!`]: macro.let_gen.html
 
 ```rust
-# use genawaiter::{generator_mut, stack::Co};
+# use genawaiter::{stack::let_gen, yield_};
 #
-async fn producer(co: Co<'_, i32>) { /* ... */ }
-
-generator_mut!(my_generator, producer);
+let_gen!(my_generator, {
+    yield_!(10);
+});
+# my_generator.resume();
 ```
 
-This will create a variable named `my_generator` in the current scope, with type `&mut
-Gen<...>`.
+If you don't like macros, you can use the low-level API directly, though note that this
+requires you to trade away safety.
 
-The macro is a shortcut for creating both a generator and its backing state (called a
-[`Shelf`](struct.Shelf.html)). If you (or your IDE) dislike macros, you can also do the
-bookkeeping by hand by using [`Gen::new`](struct.Gen.html#method.new), though note that
-this requires you to trade away safety.
+```rust
+# use genawaiter::stack::{Co, Gen, Shelf};
+#
+async fn my_producer(co: Co<'_, u8>) {
+    co.yield_(10).await;
+}
+let mut shelf = Shelf::new();
+let mut my_generator = unsafe { Gen::new(&mut shelf, my_producer) };
+# my_generator.resume();
+```
 
 # Examples
 
@@ -26,19 +35,18 @@ this requires you to trade away safety.
 Generators implement `Iterator`, so you can use them in a for loop:
 
 ```rust
-use genawaiter::{generator_mut, stack::Co};
+use genawaiter::{stack::let_gen, yield_};
 
-async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
+let_gen!(odds_under_ten, {
     let mut n = 1;
     while n < 10 {
-        co.yield_(n).await;
+        yield_!(n);
         n += 2;
     }
-}
+});
 
-generator_mut!(gen, odd_numbers_less_than_ten);
 # let mut test = Vec::new();
-for num in gen {
+for num in odds_under_ten {
     println!("{}", num);
     # test.push(num);
 }
@@ -48,82 +56,45 @@ for num in gen {
 ## Collecting into a `Vec`
 
 ```rust
-# use genawaiter::{generator_mut, stack::Co, GeneratorState};
+# use genawaiter::{stack::let_gen, yield_};
 #
-# async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
-#     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
-# }
+# let_gen!(odds_under_ten, {
+#     for n in (1..).step_by(2).take_while(|&n| n < 10) { yield_!(n); }
+# });
 #
-generator_mut!(gen, odd_numbers_less_than_ten);
-let xs: Vec<_> = gen.into_iter().collect();
+let xs: Vec<_> = odds_under_ten.into_iter().collect();
 assert_eq!(xs, [1, 3, 5, 7, 9]);
+```
+
+## A generator is a closure
+
+Like any closure, you can capture values from outer scopes.
+
+```rust
+# use genawaiter::{stack::let_gen, yield_, GeneratorState};
+#
+let two = 2;
+let_gen!(multiply, {
+    yield_!(10 * two);
+});
+assert_eq!(multiply.resume(), GeneratorState::Yielded(20));
 ```
 
 ## Using `resume()`
 
 ```rust
-# use genawaiter::{generator_mut, stack::Co, GeneratorState};
+# use genawaiter::{stack::let_gen, yield_, GeneratorState};
 #
-# async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
-#     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
-# }
+# let_gen!(odds_under_ten, {
+#     for n in (1..).step_by(2).take_while(|&n| n < 10) { yield_!(n); }
+# });
 #
-generator_mut!(gen, odd_numbers_less_than_ten);
-assert_eq!(gen.resume(), GeneratorState::Yielded(1));
-assert_eq!(gen.resume(), GeneratorState::Yielded(3));
-assert_eq!(gen.resume(), GeneratorState::Yielded(5));
-assert_eq!(gen.resume(), GeneratorState::Yielded(7));
-assert_eq!(gen.resume(), GeneratorState::Yielded(9));
-assert_eq!(gen.resume(), GeneratorState::Complete(()));
-```
-
-## Using an async closure (nightly Rust only)
-
-```ignore
-# use genawaiter::{generator_mut, stack::Co, GeneratorState};
-#
-generator_mut!(gen, async move |co| {
-    co.yield_(10).await;
-    co.yield_(20).await;
-});
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Complete(()));
-```
-
-## Using an async <del>closure</del> faux·sure (works on stable Rust)
-
-```
-# use genawaiter::{generator_mut, stack::Co, GeneratorState};
-#
-generator_mut!(gen, |co| async move {
-    co.yield_(10).await;
-    co.yield_(20).await;
-});
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Complete(()));
-```
-
-## Passing ordinary arguments
-
-This is just ordinary Rust, nothing special.
-
-```rust
-# use genawaiter::{generator_mut, stack::Co, GeneratorState};
-#
-async fn multiples_of(num: i32, co: Co<'_, i32>) {
-    let mut cur = num;
-    loop {
-        co.yield_(cur).await;
-        cur += num;
-    }
-}
-
-generator_mut!(gen, |co| multiples_of(10, co));
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Yielded(30));
+assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(1));
+assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(3));
+assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(5));
+assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(7));
+assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(9));
+assert_eq!(odds_under_ten.resume(), GeneratorState::Complete(()));
 ```
 
 ## Passing resume arguments
@@ -135,20 +106,19 @@ value is sent, there is no future being awaited inside the generator, so there i
 place the value could go where the generator could observe it.
 
 ```rust
-# use genawaiter::{generator_mut, stack::Co, GeneratorState};
+# use genawaiter::{stack::let_gen, yield_};
 #
-async fn check_numbers(co: Co<'_, (), i32>) {
-    let num = co.yield_(()).await;
+let_gen!(check_numbers, {
+    let num = yield_!(());
     assert_eq!(num, 1);
 
-    let num = co.yield_(()).await;
+    let num = yield_!(());
     assert_eq!(num, 2);
-}
+});
 
-generator_mut!(gen, check_numbers);
-gen.resume_with(0);
-gen.resume_with(1);
-gen.resume_with(2);
+check_numbers.resume_with(0);
+check_numbers.resume_with(1);
+check_numbers.resume_with(2);
 ```
 
 ## Returning a completion value
@@ -157,41 +127,188 @@ You can return a completion value with a different type than the values that are
 yielded.
 
 ```rust
-# use genawaiter::{generator_mut, stack::Co, GeneratorState};
+# use genawaiter::{stack::let_gen, yield_, GeneratorState};
 #
-async fn numbers_then_string(co: Co<'_, i32>) -> &'static str {
-    co.yield_(10).await;
-    co.yield_(20).await;
+let_gen!(numbers_then_string, {
+    yield_!(10);
+    yield_!(20);
     "done!"
+});
+
+assert_eq!(numbers_then_string.resume(), GeneratorState::Yielded(10));
+assert_eq!(numbers_then_string.resume(), GeneratorState::Yielded(20));
+assert_eq!(numbers_then_string.resume(), GeneratorState::Complete("done!"));
+```
+
+## Defining a reusable producer function
+
+```rust
+# use genawaiter::{stack::{let_gen_using, producer_fn}, yield_, GeneratorState};
+#
+#[producer_fn(u8)]
+async fn produce() {
+    yield_!(10);
 }
 
-generator_mut!(gen, numbers_then_string);
+let_gen_using!(gen, produce);
+assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+```
+
+## Using the low-level API
+
+You can define an `async fn` directly, instead of relying on the `gen!` or `producer!`
+macros.
+
+```rust
+use genawaiter::stack::{let_gen_using, Co};
+
+async fn producer(co: Co<'_, i32>) {
+    let mut n = 1;
+    while n < 10 {
+        co.yield_(n).await;
+        n += 2;
+    }
+}
+
+let_gen_using!(odds_under_ten, producer);
+let result: Vec<_> = odds_under_ten.into_iter().collect();
+assert_eq!(result, [1, 3, 5, 7, 9]);
+```
+
+## Using the low-level API with an async closure (nightly Rust only)
+
+```ignore
+# use genawaiter::{stack::let_gen_using, GeneratorState};
+#
+let_gen_using!(gen, async move |co| {
+    co.yield_(10).await;
+    co.yield_(20).await;
+});
 assert_eq!(gen.resume(), GeneratorState::Yielded(10));
 assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Complete("done!"));
+assert_eq!(gen.resume(), GeneratorState::Complete(()));
+```
+
+## Using the low-level API with an async <del>closure</del> faux·sure (for stable Rust)
+
+```
+# use genawaiter::{stack::let_gen_using, GeneratorState};
+#
+let_gen_using!(gen, |co| async move {
+    co.yield_(10).await;
+    co.yield_(20).await;
+});
+assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(), GeneratorState::Complete(()));
+```
+
+## Using the low-level API with function arguments
+
+This is just ordinary Rust, nothing special.
+
+```rust
+# use genawaiter::{stack::{let_gen_using, Co}, GeneratorState};
+#
+async fn multiples_of(num: i32, co: Co<'_, i32>) {
+    let mut cur = num;
+    loop {
+        co.yield_(cur).await;
+        cur += num;
+    }
+}
+
+let_gen_using!(gen, |co| multiples_of(10, co));
+assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(), GeneratorState::Yielded(30));
 ```
 */
 
-pub use engine::Co;
-pub use generator::{Gen, Shelf};
+pub use crate::stack::{
+    engine::Co,
+    generator::{Gen, Shelf},
+};
 
-#[macro_use]
-mod macros;
+/// Creates a generator.
+///
+/// The first argument is the name of the resulting variable.
+///
+/// ```ignore
+/// let_gen!(my_generator, { /* ... */ });
+/// // Think of this as the spiritual equivalent of:
+/// let mut my_generator = Gen::new(/* ... */);
+/// ```
+///
+/// The second argument is the body of the generator. It should contain one or
+/// more calls to the [`yield_!`] macro.
+///
+/// This macro is a shortcut for creating both a generator and its backing state
+/// (called a [`Shelf`](struct.Shelf.html)). If you (or your IDE) dislike
+/// macros, you can also do the bookkeeping by hand by using
+/// [`Gen::new`](struct.Gen.html#method.new), though note that this requires you
+/// to trade away safety.
+///
+/// # Examples
+///
+/// [_See the module-level docs for examples._](.)
+#[cfg(feature = "proc_macro")]
+pub use genawaiter_macro::stack_let_gen as let_gen;
 
-mod engine;
-mod generator;
-mod iterator;
+/// Creates a generator using a producer defined elsewhere.
+///
+/// The first argument is the name of the resulting variable.
+///
+/// ```ignore
+/// let_gen!(my_generator, { /* ... */ });
+/// // Think of this as the spiritual equivalent of:
+/// let mut my_generator = Gen::new(/* ... */);
+/// ```
+///
+/// The second line is the producer that will be used. It can be one of these
+/// two things:
+///
+/// 1.  The result of [`stack_producer!`] or [`stack_producer_fn!`]
+///
+///     [`stack_producer_fn!`]: attr.producer_fn.html
+///
+/// 2.  A function with this type:
+///
+///     ```ignore
+///     async fn producer(co: Co<'_, Yield, Resume>) -> Completion { /* ... */ }
+///     // which is equivalent to:
+///     fn producer(co: Co<'_, Yield, Resume>) -> impl Future<Output = Completion> { /* ... */ }
+///     ```
+///
+/// This macro is a shortcut for creating both a generator and its backing state
+/// (called a [`Shelf`](struct.Shelf.html)). If you (or your IDE) dislike
+/// macros, you can also do the bookkeeping by hand by using
+/// [`Gen::new`](struct.Gen.html#method.new), though note that this requires you
+/// to trade away safety.
+///
+/// # Examples
+///
+/// [_See the module-level docs for examples._](.)
+pub use genawaiter_macro::stack_let_gen_using as let_gen_using;
 
-#[cfg(feature = "futures03")]
-mod stream;
-
-/// Function like `proc_macro` to easily and safely create generators from
-/// functions.
+/// Turns a function into a producer, which can then be used to create a
+/// generator.
+///
+/// The body of the function should contain one or more [`yield_!`] expressions.
+///
+/// # Examples
+///
+/// [_See the module-level docs for examples._](.)
 #[cfg(feature = "proc_macro")]
 pub use genawaiter_proc_macro::stack_producer_fn as producer_fn;
 
-#[cfg(feature = "proc_macro")]
-pub use genawaiter_macro::gen_stack as gen;
+#[macro_use]
+mod macros;
+mod engine;
+mod generator;
+mod iterator;
+#[cfg(feature = "futures03")]
+mod stream;
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]
@@ -199,7 +316,11 @@ mod nightly_tests;
 
 #[cfg(test)]
 mod tests {
-    use crate::{stack::Co, testing::DummyFuture, GeneratorState};
+    use crate::{
+        stack::{let_gen_using, Co},
+        testing::DummyFuture,
+        GeneratorState,
+    };
     use std::{
         cell::RefCell,
         sync::{
@@ -208,14 +329,14 @@ mod tests {
         },
     };
 
-    async fn simple_producer(c: Co<'_, i32>) -> &'static str {
-        c.yield_(10).await;
+    async fn simple_producer(co: Co<'_, i32>) -> &'static str {
+        co.yield_(10).await;
         "done"
     }
 
     #[test]
     fn function() {
-        generator_mut!(gen, simple_producer);
+        let_gen_using!(gen, simple_producer);
         assert_eq!(gen.resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.resume(), GeneratorState::Complete("done"));
     }
@@ -227,7 +348,7 @@ mod tests {
             "done"
         }
 
-        generator_mut!(gen, |co| gen(5, co));
+        let_gen_using!(gen, |co| gen(5, co));
         assert_eq!(gen.resume(), GeneratorState::Yielded(10));
         assert_eq!(gen.resume(), GeneratorState::Complete("done"));
     }
@@ -242,7 +363,7 @@ mod tests {
         }
 
         let resumes = RefCell::new(Vec::new());
-        generator_mut!(gen, |co| gen(&resumes, co));
+        let_gen_using!(gen, |co| gen(&resumes, co));
         assert_eq!(*resumes.borrow(), &[] as &[&str]);
 
         assert_eq!(gen.resume_with("ignored"), GeneratorState::Yielded(10));
@@ -262,7 +383,7 @@ mod tests {
             DummyFuture.await;
         }
 
-        generator_mut!(gen, wrong);
+        let_gen_using!(gen, wrong);
         gen.resume();
     }
 
@@ -274,7 +395,7 @@ mod tests {
             let _ = co.yield_(20);
         }
 
-        generator_mut!(gen, wrong);
+        let_gen_using!(gen, wrong);
         gen.resume();
     }
 
@@ -285,7 +406,7 @@ mod tests {
             co
         }
 
-        generator_mut!(gen, shenanigans);
+        let_gen_using!(gen, shenanigans);
         let escaped_co = match gen.resume() {
             GeneratorState::Yielded(_) => panic!(),
             GeneratorState::Complete(co) => co,
@@ -307,7 +428,7 @@ mod tests {
         let flag = Arc::new(AtomicBool::new(false));
         {
             let capture_the_flag = flag.clone();
-            generator_mut!(gen, |co| {
+            let_gen_using!(gen, |co| {
                 async move {
                     let _set_on_drop = SetFlagOnDrop(capture_the_flag);
                     co.yield_(10).await;
@@ -336,11 +457,11 @@ mod doctests {
     Make sure `co` cannot escape to the `'static` lifetime.
 
     ```compile_fail
-    use genawaiter::{generator_mut, stack::Co};
+    use genawaiter::stack::{let_gen_using, Co};
 
     async fn producer(co: Co<'static, i32>) {}
 
-    generator_mut!(gen, producer);
+    let_gen_using!(gen, producer);
     ```
     */
     fn co_is_not_static() {}
@@ -349,15 +470,16 @@ mod doctests {
     This test is exactly the same as above, but doesn't trigger the failure.
 
     ```
-    use genawaiter::{generator_mut, stack::Co};
+    use genawaiter::stack::{let_gen_using, Co};
 
     async fn producer(co: Co<'_, i32>) {}
 
-    generator_mut!(gen, producer);
+    let_gen_using!(gen, producer);
     ```
     */
     fn co_is_not_static_baseline() {}
 }
+
 #[allow(dead_code)]
 #[cfg(feature = "proc_macro")]
 mod doc_compile_fail {
@@ -365,11 +487,27 @@ mod doc_compile_fail {
     Make sure `co` cannot be used as argument by user.
 
     ```compile_fail
-    #[genawaiter::stack::producer_fn(u8)]
-    async fn odds(co: genawaiter::stack::Co<'_, u8>) {
-        let _x = genawaiter::yield_!(10);
+    use genawaiter::{stack::{producer_fn, Co}, yield_};
+
+    #[producer_fn(u8)]
+    async fn odds(co: Co<'_, u8>) {
+        yield_!(10);
     }
     ```
     */
     fn with_args_compile_fail() {}
+
+    /**
+    This test is exactly the same as above, except it passes.
+
+    ```rust
+    use genawaiter::{stack::{producer_fn, Co}, yield_};
+
+    #[producer_fn(u8)]
+    async fn odds() {
+        yield_!(10);
+    }
+    ```
+    */
+    fn with_args_compile_fail_baseline() {}
 }

@@ -1,11 +1,15 @@
+#![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
+#![warn(clippy::cargo, clippy::pedantic)]
+#![cfg_attr(feature = "strict", deny(warnings))]
+
 extern crate proc_macro;
 
-use std::string::ToString;
-
+use crate::visit::YieldReplace;
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, abort_call_site, proc_macro_error};
 use proc_macro_hack::proc_macro_hack;
 use quote::quote;
+use std::string::ToString;
 use syn::{
     self,
     parse_macro_input,
@@ -20,10 +24,7 @@ use syn::{
 };
 
 mod visit;
-use visit::YieldReplace;
 
-/// Macro attribute to turn an `async fn` into a generator, yielding values on
-/// the stack,
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn stack_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -41,8 +42,6 @@ pub fn stack_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-/// Function like `proc_macro` to easily and safely create generators from
-/// closures on the stack.
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn stack_producer(input: TokenStream) -> TokenStream {
@@ -53,15 +52,13 @@ pub fn stack_producer(input: TokenStream) -> TokenStream {
     // the only way around is to destructure.
     let arg = match parse_str::<FnArg>(stack::CO_ARG) {
         Ok(FnArg::Typed(x)) => x,
-        _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
+        _ => abort_call_site!("string Pat parse failed Co<...>"),
     };
 
     let tokens = quote! { |#arg| async move #input };
     tokens.into()
 }
 
-/// Macro attribute to turn an `async fn` into a generator that can be
-/// sent across threads.
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn sync_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -79,8 +76,6 @@ pub fn sync_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-/// Attribute `proc_macro` to easily create generators from
-/// closures that are `Sync`.
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn sync_producer(input: TokenStream) -> TokenStream {
@@ -90,14 +85,13 @@ pub fn sync_producer(input: TokenStream) -> TokenStream {
     // for some reason parsing as a PatType (correct for closures) fails
     let arg = match parse_str::<FnArg>(sync::CO_ARG) {
         Ok(FnArg::Typed(x)) => x,
-        _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
+        _ => abort_call_site!("string Pat parse failed Co<...>"),
     };
 
     let tokens = quote! { |#arg| async move #input };
     tokens.into()
 }
 
-/// Macro attribute to turn an `async fn` into a ref counted (`Rc`) generator.
 #[proc_macro_attribute]
 #[proc_macro_error]
 pub fn rc_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -115,8 +109,6 @@ pub fn rc_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-/// Function like `proc_macro` to easily create generators from
-/// closures that are `Rc`.
 #[proc_macro_hack]
 #[proc_macro_error]
 pub fn rc_producer(input: TokenStream) -> TokenStream {
@@ -126,7 +118,7 @@ pub fn rc_producer(input: TokenStream) -> TokenStream {
     // for some reason parsing as a PatType (correct for closures) fails
     let arg = match parse_str::<FnArg>(rc::CO_ARG) {
         Ok(FnArg::Typed(x)) => x,
-        _ => proc_macro_error::abort_call_site!("string Pat parse failed Co<...>"),
+        _ => abort_call_site!("string Pat parse failed Co<...>"),
     };
 
     let tokens = quote! { |#arg| async move #input };
@@ -178,7 +170,8 @@ fn add_coroutine_arg(func: &mut ItemFn, co_ty: &str) {
     } else {
         abort!(
             func.sig.span(),
-            "arguments are not allowed when using proc_macro"
+            "A generator producer cannot accept any arguments. Instead, consider \
+             using a closure and capturing the values you need.",
         )
     }
 }

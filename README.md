@@ -15,25 +15,25 @@ This crate implements stackless generators (aka coroutines) in stable Rust. Inst
 
 Features:
 
-- safe
+- supports resume arguments and completion values
 - allocation-free
-- supports resume arguments
-- no dependencies
+- no runtime dependencies
+  - no compile-time dependencies either, with `default-features = []`
+- built on top of standard language constructs, which means there are no platform-specific shenanigans
 
 Example:
 
 ```rust
-let generator = Gen::new(|co| async move {
+let odd_numbers_less_than_ten = gen!({
     let mut n = 1;
     while n < 10 {
-        // Suspend a function at any point with a value.
-        co.yield_(n).await;
+        yield_!(n); // Suspend a function at any point with a value.
         n += 2;
     }
 });
 
 // Generators can be used as ordinary iterators.
-for num in generator {
+for num in odd_numbers_less_than_ten {
     println!("{}", num);
 }
 ```

@@ -71,13 +71,19 @@ struct Advance<'a, F: Future, A: Airlock> {
     airlock: A,
 }
 
+impl<'a, F: Future, A: Airlock> Advance<'a, F, A> {
+    fn future_mut(self: Pin<&mut Self>) -> Pin<&mut F> {
+        // Safety: This is just projecting a pinned reference. Neither `self` nor
+        // `self.future` are moved.
+        unsafe { self.map_unchecked_mut(|s| s.future.as_mut().get_unchecked_mut()) }
+    }
+}
+
 impl<'a, F: Future, A: Airlock> Future for Advance<'a, F, A> {
     type Output = GeneratorState<A::Yield, F::Output>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        // Safety: `self` is not moved.
-        let future = unsafe { self.as_mut().map_unchecked_mut(|s| &mut s.future) };
-        match future.poll(cx) {
+        match self.as_mut().future_mut().poll(cx) {
             Poll::Pending => {
                 let value = self.airlock.replace(Next::Empty);
                 match value {
@@ -121,7 +127,7 @@ impl<A: Airlock> Co<A> {
     ///
     /// The caller should immediately `await` the result of this function.
     ///
-    /// _See the module-level docs for examples._
+    /// [_See the module-level docs for examples._](.)
     pub fn yield_(&self, value: A::Yield) -> impl Future<Output = A::Resume> + '_ {
         #[cfg(debug_assertions)]
         match self.airlock.peek() {
