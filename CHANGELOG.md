@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.99.0 – 2020-02-16
+
+### Added
+
+- Proc macros `gen!`, `yield_!`, and friends (Thanks [@DevinR528](https://github.com/DevinR528)!)
+- Example showing error propagation
+
+### Deprecated
+
+- `generator_mut!` and `unsafe_create_generator!` macros. Use `let_gen_using!` instead.
+
 ## v0.2.2 – 2019-11-25
 
 ### Added
