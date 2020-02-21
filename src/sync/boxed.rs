@@ -26,7 +26,7 @@ impl<Y, R, C> GenBoxed<Y, R, C> {
     /// #     for n in (1..).step_by(2).take_while(|&n| n < 10) { co.yield_(n).await; }
     /// # }
     /// #
-    /// let _: GenBoxed<i32> = Gen::new_boxed(|co| producer(co));
+    /// let _: GenBoxed<i32> = GenBoxed::new_boxed(|co| producer(co));
     /// let _: GenBoxed<i32> = Gen::new(|co| Box::pin(producer(co)));
     /// ```
     pub fn new_boxed<F>(producer: impl FnOnce(Co<Y, R>) -> F) -> Self
