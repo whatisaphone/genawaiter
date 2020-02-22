@@ -1,6 +1,6 @@
 use genawaiter::rc::{Co, Gen};
 
-async fn multiples_of<'a, T>(next: &'a Child<T>, co: Co<&'a T>) {
+async fn linked_list<'a, T>(next: &'a Child<T>, co: Co<&'a T>) {
     let mut current = next;
     loop {
         if let Child::Next { next, val } = current {
@@ -53,7 +53,7 @@ impl<T: PartialEq + Clone> List<T> {
         current.set_next(val);
     }
     fn iter(&self) -> impl Iterator<Item = &T> {
-        let gen = Gen::new(|co| multiples_of(&self.next, co));
+        let gen = Gen::new(|co| linked_list(&self.next, co));
         gen.into_iter()
     }
 }
