@@ -1,4 +1,4 @@
-use genawaiter::{rc::{Co, Gen}};
+use genawaiter::rc::{Co, Gen};
 
 async fn multiples_of<'a, T>(next: &'a Child<T>, co: Co<&'a T>) {
     let mut current = next;
@@ -14,13 +14,16 @@ async fn multiples_of<'a, T>(next: &'a Child<T>, co: Co<&'a T>) {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Child<T> {
-    Next { next: Box<Child<T>>, val: T},
+    Next { next: Box<Child<T>>, val: T },
     None,
 }
 
 impl<T: PartialEq> Child<T> {
     fn new(val: T) -> Child<T> {
-        Self::Next { next: Box::new(Child::None), val, }
+        Self::Next {
+            next: Box::new(Child::None),
+            val,
+        }
     }
 
     fn set_next(&mut self, val: T) {
@@ -65,5 +68,5 @@ fn main() {
 
     for x in list.iter() {
         println!("{:?}", x);
-    } 
+    }
 }
