@@ -2,17 +2,13 @@ use genawaiter::rc::{Co, Gen};
 
 async fn linked_list<'a, T>(next: &'a Child<T>, co: Co<&'a T>) {
     let mut current = next;
-    loop {
-        if let Child::Next { next, val } = current {
-            co.yield_(val).await;
-            current = &*next;
-        } else {
-            break;
-        }
+    while let Child::Next { next, val } = current {
+        co.yield_(val).await;
+        current = &*next;
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 enum Child<T> {
     Next { next: Box<Child<T>>, val: T },
     None,
@@ -36,22 +32,19 @@ struct List<T> {
     next: Child<T>,
 }
 
-impl<T: PartialEq + Clone> List<T> {
+impl<T: PartialEq> List<T> {
     fn new() -> List<T> {
         Self { next: Child::None }
     }
 
     fn insert(&mut self, val: T) {
         let mut current = &mut self.next;
-        loop {
-            if let Child::Next { next, .. } = current {
-                current = &mut *next;
-            } else {
-                break;
-            }
+        while let Child::Next { next, .. } = current {
+            current = &mut *next;
         }
         current.set_next(val);
     }
+
     fn iter(&self) -> impl Iterator<Item = &T> {
         let gen = Gen::new(|co| linked_list(&self.next, co));
         gen.into_iter()
