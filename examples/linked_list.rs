@@ -12,32 +12,32 @@ async fn linked_list<'a, T>(next: &'a Child<T>, co: Co<&'a T>) {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum Child<T> {
+#[derive(Debug)]
+pub enum Child<T> {
     Next { next: Box<Child<T>>, val: T },
     None,
 }
 
-impl<T: PartialEq> Child<T> {
+impl<T> Child<T> {
     fn new(val: T) -> Child<T> {
         Self::Next {
-            next: Box::new(Child::None),
+            next: Box::new(Self::None),
             val,
         }
     }
 
     fn set_next(&mut self, val: T) {
-        *self = Child::new(val);
+        *self = Self::new(val);
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-struct List<T> {
+#[derive(Debug)]
+pub struct List<T> {
     next: Child<T>,
 }
 
-impl<T: PartialEq> List<T> {
-    fn new() -> List<T> {
+impl<T> List<T> {
+    fn new() -> Self {
         Self { next: Child::None }
     }
 
