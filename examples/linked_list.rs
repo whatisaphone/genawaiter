@@ -1,3 +1,7 @@
+#![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
+#![warn(clippy::pedantic)]
+#![cfg_attr(feature = "strict", deny(warnings))]
+
 use genawaiter::rc::{Co, Gen};
 
 async fn linked_list<'a, T>(next: &'a Child<T>, co: Co<&'a T>) {
