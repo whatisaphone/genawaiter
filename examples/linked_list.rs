@@ -19,7 +19,7 @@ pub enum Child<T> {
 }
 
 impl<T> Child<T> {
-    fn new(val: T) -> Child<T> {
+    fn new(val: T) -> Self {
         Self::Next {
             next: Box::new(Self::None),
             val,
