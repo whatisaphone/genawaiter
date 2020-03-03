@@ -31,7 +31,7 @@ mod tests {
     use crate::sync::{Co, Gen};
     use std::iter::IntoIterator;
 
-    async fn produce(co: Co<i32>) {
+    async fn produce(mut co: Co<i32>) {
         co.yield_(10).await;
         co.yield_(20).await;
     }

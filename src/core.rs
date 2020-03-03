@@ -128,7 +128,7 @@ impl<A: Airlock> Co<A> {
     /// The caller should immediately `await` the result of this function.
     ///
     /// [_See the module-level docs for examples._](.)
-    pub fn yield_(&self, value: A::Yield) -> impl Future<Output = A::Resume> + '_ {
+    pub fn yield_(&mut self, value: A::Yield) -> impl Future<Output = A::Resume> + '_ {
         #[cfg(debug_assertions)]
         match self.airlock.peek() {
             Next::Yield(()) => {

@@ -55,7 +55,7 @@ mod tests {
     use crate::stack::{let_gen_using, Co, Gen, Shelf};
     use std::iter::IntoIterator;
 
-    async fn produce(co: Co<'_, i32>) {
+    async fn produce(mut co: Co<'_, i32>) {
         co.yield_(10).await;
         co.yield_(20).await;
     }

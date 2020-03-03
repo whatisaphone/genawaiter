@@ -52,7 +52,7 @@ mod tests {
         let mut gen = unsafe { Gen::new(&mut shelf, shenanigans) };
 
         // Get the `co` out of the generator (don't try this at home).
-        let escaped_co = match gen.resume() {
+        let mut escaped_co = match gen.resume() {
             GeneratorState::Yielded(_) => panic!(),
             GeneratorState::Complete(co) => co,
         };

@@ -4,7 +4,7 @@
 
 use genawaiter::stack::{let_gen_using, Co, Gen, Shelf};
 
-async fn odd_numbers_less_than_ten(co: Co<'_, i32>) {
+async fn odd_numbers_less_than_ten(mut co: Co<'_, i32>) {
     for n in (1..).step_by(2).take_while(|&n| n < 10) {
         co.yield_(n).await;
     }

@@ -1,0 +1,5 @@
+error[E0726]: implicit elided lifetime not allowed here
+ --> $DIR/stack_fail_not_awaiting_yield.rs:4:24
+  |
+4 | async fn wrong(mut co: Co<i32>) {
+  |                        ^^^^^^^ help: indicate the anonymous lifetime: `Co<'_, i32>`

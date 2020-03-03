@@ -38,7 +38,7 @@ If you don't like macros, you can use the low-level API directly.
 ```rust
 # use genawaiter::rc::{Co, Gen};
 #
-async fn my_producer(co: Co<u8>) {
+async fn my_producer(mut co: Co<u8>) {
     co.yield_(10).await;
 }
 let mut my_generator = Gen::new(my_producer);
@@ -217,7 +217,7 @@ macros.
 ```rust
 use genawaiter::rc::{Co, Gen};
 
-async fn producer(co: Co<i32>) {
+async fn producer(mut co: Co<i32>) {
     let mut n = 1;
     while n < 10 {
         co.yield_(n).await;
@@ -249,7 +249,7 @@ assert_eq!(gen.resume(), GeneratorState::Complete(()));
 ```
 # use genawaiter::{rc::Gen, GeneratorState};
 #
-let mut gen = Gen::new(|co| async move {
+let mut gen = Gen::new(|mut co| async move {
     co.yield_(10).await;
     co.yield_(20).await;
 });
@@ -265,7 +265,7 @@ This is just ordinary Rust, nothing special.
 ```rust
 # use genawaiter::{rc::{Co, Gen}, GeneratorState};
 #
-async fn multiples_of(num: i32, co: Co<i32>) {
+async fn multiples_of(num: i32, mut co: Co<i32>) {
     let mut cur = num;
     loop {
         co.yield_(cur).await;
@@ -326,7 +326,7 @@ mod tests {
         future::Future,
     };
 
-    async fn simple_producer(co: Co<i32>) -> &'static str {
+    async fn simple_producer(mut co: Co<i32>) -> &'static str {
         co.yield_(10).await;
         "done"
     }
@@ -340,7 +340,7 @@ mod tests {
 
     #[test]
     fn simple_closure() {
-        async fn gen(i: i32, co: Co<i32>) -> &'static str {
+        async fn gen(i: i32, mut co: Co<i32>) -> &'static str {
             co.yield_(i * 2).await;
             "done"
         }
@@ -352,7 +352,7 @@ mod tests {
 
     #[test]
     fn resume_args() {
-        async fn gen(resumes: &RefCell<Vec<&str>>, co: Co<i32, &'static str>) {
+        async fn gen(resumes: &RefCell<Vec<&str>>, mut co: Co<i32, &'static str>) {
             let resume_arg = co.yield_(10).await;
             resumes.borrow_mut().push(resume_arg);
             let resume_arg = co.yield_(20).await;
@@ -387,7 +387,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Co::yield_")]
     fn multiple_yield_helpful_message() {
-        async fn wrong(co: Co<i32>) {
+        async fn wrong(mut co: Co<i32>) {
             let _ = co.yield_(10);
             let _ = co.yield_(20);
         }
@@ -404,7 +404,7 @@ mod tests {
         }
 
         let mut gen = Gen::new(shenanigans);
-        let escaped_co = match gen.resume() {
+        let mut escaped_co = match gen.resume() {
             GeneratorState::Yielded(_) => panic!(),
             GeneratorState::Complete(co) => co,
         };
@@ -417,7 +417,7 @@ mod tests {
     #[test]
     fn gen_is_movable() {
         #[inline(never)]
-        async fn produce(addrs: &mut Vec<*const i32>, co: Co<i32>) -> &'static str {
+        async fn produce(addrs: &mut Vec<*const i32>, mut co: Co<i32>) -> &'static str {
             let sentinel: Cell<i32> = Cell::new(0x8001);
             // If the future state moved, this reference would become invalid, and
             // hilarity would ensue.

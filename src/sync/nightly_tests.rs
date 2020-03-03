@@ -5,7 +5,7 @@ use crate::{ops::GeneratorState, sync::Gen};
 
 #[test]
 fn async_closure() {
-    let mut gen = Gen::new(async move |co| {
+    let mut gen = Gen::new(async move |mut co| {
         co.yield_(10).await;
         "done"
     });
