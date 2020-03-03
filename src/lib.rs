@@ -95,7 +95,7 @@ use the low-level API directly:
 ```rust
 # use genawaiter::sync::{Co, Gen};
 #
-let count_to_ten = Gen::new(|co| async move {
+let count_to_ten = Gen::new(|mut co| async move {
     for n in 0..10 {
         co.yield_(n).await;
     }

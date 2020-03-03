@@ -32,7 +32,7 @@ mod tests {
 
     #[test]
     fn blocking() {
-        async fn produce(co: Co<'_, i32>) {
+        async fn produce(mut co: Co<'_, i32>) {
             co.yield_(10).await;
             co.yield_(20).await;
         }
@@ -45,7 +45,7 @@ mod tests {
 
     #[test]
     fn non_blocking() {
-        async fn produce(co: Co<'_, i32>) {
+        async fn produce(mut co: Co<'_, i32>) {
             SlowFuture::new().await;
             co.yield_(10).await;
             SlowFuture::new().await;

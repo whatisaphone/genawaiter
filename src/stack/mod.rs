@@ -23,7 +23,7 @@ requires you to trade away safety.
 ```rust
 # use genawaiter::stack::{Co, Gen, Shelf};
 #
-async fn my_producer(co: Co<'_, u8>) {
+async fn my_producer(mut co: Co<'_, u8>) {
     co.yield_(10).await;
 }
 let mut shelf = Shelf::new();
@@ -186,7 +186,7 @@ macros.
 ```rust
 use genawaiter::stack::{let_gen_using, Co};
 
-async fn producer(co: Co<'_, i32>) {
+async fn producer(mut co: Co<'_, i32>) {
     let mut n = 1;
     while n < 10 {
         co.yield_(n).await;
@@ -218,7 +218,7 @@ assert_eq!(gen.resume(), GeneratorState::Complete(()));
 ```
 # use genawaiter::{stack::let_gen_using, GeneratorState};
 #
-let_gen_using!(gen, |co| async move {
+let_gen_using!(gen, |mut co| async move {
     co.yield_(10).await;
     co.yield_(20).await;
 });
@@ -234,7 +234,7 @@ This is just ordinary Rust, nothing special.
 ```rust
 # use genawaiter::{stack::{let_gen_using, Co}, GeneratorState};
 #
-async fn multiples_of(num: i32, co: Co<'_, i32>) {
+async fn multiples_of(num: i32, mut co: Co<'_, i32>) {
     let mut cur = num;
     loop {
         co.yield_(cur).await;
@@ -353,7 +353,7 @@ mod tests {
         },
     };
 
-    async fn simple_producer(co: Co<'_, i32>) -> &'static str {
+    async fn simple_producer(mut co: Co<'_, i32>) -> &'static str {
         co.yield_(10).await;
         "done"
     }
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn simple_closure() {
-        async fn gen(i: i32, co: Co<'_, i32>) -> &'static str {
+        async fn gen(i: i32, mut co: Co<'_, i32>) -> &'static str {
             co.yield_(i * 2).await;
             "done"
         }
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn resume_args() {
-        async fn gen(resumes: &RefCell<Vec<&str>>, co: Co<'_, i32, &'static str>) {
+        async fn gen(resumes: &RefCell<Vec<&str>>, mut co: Co<'_, i32, &'static str>) {
             let resume_arg = co.yield_(10).await;
             resumes.borrow_mut().push(resume_arg);
             let resume_arg = co.yield_(20).await;
@@ -414,7 +414,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Co::yield_")]
     fn multiple_yield_helpful_message() {
-        async fn wrong(co: Co<'_, i32>) {
+        async fn wrong(mut co: Co<'_, i32>) {
             let _ = co.yield_(10);
             let _ = co.yield_(20);
         }
@@ -431,7 +431,7 @@ mod tests {
         }
 
         let_gen_using!(gen, shenanigans);
-        let escaped_co = match gen.resume() {
+        let mut escaped_co = match gen.resume() {
             GeneratorState::Yielded(_) => panic!(),
             GeneratorState::Complete(co) => co,
         };
@@ -452,7 +452,7 @@ mod tests {
         let flag = Arc::new(AtomicBool::new(false));
         {
             let capture_the_flag = flag.clone();
-            let_gen_using!(gen, |co| {
+            let_gen_using!(gen, |mut co| {
                 async move {
                     let _set_on_drop = SetFlagOnDrop(capture_the_flag);
                     co.yield_(10).await;
