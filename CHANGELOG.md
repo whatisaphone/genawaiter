@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.99.1 – 2020-03-08
+
+### Fixed
+
+- Compile error due to missing features ([#12](https://github.com/whatisaphone/genawaiter/issues/12))
+
 ## v0.99.0 – 2020-02-16
 
 ### Added
