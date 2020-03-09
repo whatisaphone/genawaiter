@@ -16,9 +16,10 @@ This crate implements stackless generators (aka coroutines) in stable Rust. Inst
 Features:
 
 - supports resume arguments and completion values
+- supports async generators (e.g., `Stream`s)
 - allocation-free
 - no runtime dependencies
-  - no compile-time dependencies either, with `default-features = []`
+  - no compile-time dependencies either, with `default-features = false`
 - built on top of standard language constructs, which means there are no platform-specific shenanigans
 
 Example:
@@ -46,6 +47,18 @@ Result:
 5
 7
 9
+```
+
+And here is the same generator, this time without macros. This is how you do things with `default-features = false` (which eliminates the proc macro dependencies).
+
+```rust
+let odd_numbers_less_than_ten = Gen::new(|co| async move {
+    let mut n = 1;
+    while n < 10 {
+        co.yield_(n).await;
+        n += 2;
+    }
+});
 ```
 
 [See the docs for more.](https://docs.rs/genawaiter)
