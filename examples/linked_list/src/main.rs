@@ -1,7 +1,8 @@
 //! Example of linked listed iteration using a generator.
 //!
-//! from the famous or infamous
-//! https://rust-unofficial.github.io/too-many-lists/second-final.html
+//! from the famous or infamous linked list example.
+//!
+//! [linked list]: https://rust-unofficial.github.io/too-many-lists/second-final.html
 
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
 #![warn(clippy::pedantic)]
