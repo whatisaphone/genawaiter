@@ -1,9 +1,11 @@
+//! Example of linked listed iteration using a generator.
+//!
+//! from the famous or infamous
+//! https://rust-unofficial.github.io/too-many-lists/second-final.html
+
 #![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
 #![warn(clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
-
-// from the famous or infamous
-// https://rust-unofficial.github.io/too-many-lists/second-final.html
 
 use genawaiter::{rc::gen, yield_};
 
