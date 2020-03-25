@@ -117,6 +117,23 @@ fn stack_yield_match() {
     assert_eq!(vec![1, 3, 5, 7, 9], res)
 }
 
+#[test]
+fn stack_yield_closure_no_macro() {
+    let mut shelf = genawaiter::stack::Shelf::new();
+    let gen = unsafe {
+        Gen::new(&mut shelf, |co| async move {
+            let mut n = 1;
+            while n < 10 {
+                co.yield_(n).await;
+                n += 2;
+            }
+        })
+    };
+
+    let res = gen.into_iter().collect::<Vec<_>>();
+    assert_eq!(vec![1, 3, 5, 7, 9], res)
+}
+
 #[cfg(feature = "proc_macro")]
 #[test]
 fn stack_yield_closure() {

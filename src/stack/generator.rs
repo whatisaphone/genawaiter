@@ -1,10 +1,11 @@
+use std::{future::Future, mem::MaybeUninit, pin::Pin, ptr};
+
 use crate::{
     core::{advance, async_advance, Airlock as _, Next},
-    ext::MaybeUninitExt,
     ops::{Coroutine, GeneratorState},
     stack::engine::{Airlock, Co},
 };
-use std::{future::Future, mem, pin::Pin, ptr};
+use std::cell::UnsafeCell;
 
 /// This data structure holds the transient state of an executing generator.
 ///
@@ -12,14 +13,14 @@ use std::{future::Future, mem, pin::Pin, ptr};
 /// `GeneratorState` enum.
 ///
 /// [_See the module-level docs for examples._](.)
-// Safety: The lifetime of the data is controlled by a `Gen`, which constructs
-// it in place, and holds a mutable reference right up until dropping it in
-// place. Thus, the data inside is pinned and can never be moved.
-pub struct Shelf<Y, R, F: Future>(mem::MaybeUninit<State<Y, R, F>>);
+pub struct Shelf<Y, R, F: Future>(UnsafeCell<State<Y, R, F>>);
 
-struct State<Y, R, F: Future> {
+struct State<Y, R, F> {
     airlock: Airlock<Y, R>,
-    future: F,
+    // Safety: The lifetime of the data is controlled by a `Gen`, which constructs
+    // it in place, and holds a mutable reference right up until dropping it in
+    // place. Thus, the data inside is pinned and can never be moved.
+    future: MaybeUninit<F>,
 }
 
 impl<Y, R, F: Future> Shelf<Y, R, F> {
@@ -28,7 +29,10 @@ impl<Y, R, F: Future> Shelf<Y, R, F> {
     /// [_See the module-level docs for examples._](.)
     #[must_use]
     pub fn new() -> Self {
-        Self(mem::MaybeUninit::uninit())
+        Self(UnsafeCell::new(State {
+            airlock: Airlock::default(),
+            future: MaybeUninit::uninit(),
+        }))
     }
 }
 
@@ -43,7 +47,7 @@ impl<Y, R, F: Future> Default for Shelf<Y, R, F> {
 ///
 /// [_See the module-level docs for examples._](.)
 pub struct Gen<'s, Y, R, F: Future> {
-    state: Pin<&'s mut State<Y, R, F>>,
+    state: Pin<&'s mut Shelf<Y, R, F>>,
 }
 
 impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
@@ -89,19 +93,16 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
         shelf: &'s mut Shelf<Y, R, F>,
         producer: impl FnOnce(Co<'s, Y, R>) -> F,
     ) -> Self {
-        // Safety: Build the struct in place, by writing each field in place.
-        let p = &mut *shelf.0.as_mut_ptr() as *mut State<Y, R, F>;
+        let state = shelf.0.get();
+        let future = producer(Co::new(&(*state).airlock));
+        // initializes the future in-place
+        (*state).future.as_mut_ptr().write(future);
 
-        let airlock = Airlock::default();
-        ptr::write(&mut (*p).airlock, airlock);
-
-        let future = producer(Co::new(&(*p).airlock));
-        ptr::write(&mut (*p).future, future);
-
-        // Safety: the state can never be moved again, because we store it inside a
-        // `Pin` until `Gen::drop`, where the contents are dropped in place.
-        let state = Pin::new_unchecked(shelf.0.assume_init_get_mut());
-        Self { state }
+        Self {
+            // Safety: The shelf is borrowed by the resulting `Gen` is hence
+            // pinned
+            state: Pin::new_unchecked(shelf),
+        }
     }
 
     /// Resumes execution of the generator.
@@ -124,10 +125,10 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
         unsafe {
             // Safety: This is a pin projection. `future` is pinned, but never moved.
             // `airlock` is never pinned.
-            let state = self.state.as_mut().get_unchecked_mut();
+            let state = self.state.0.get();
 
-            let future = Pin::new_unchecked(&mut state.future);
-            let airlock = &state.airlock;
+            let future = Pin::new_unchecked(&mut *(*state).future.as_mut_ptr());
+            let airlock = &(*state).airlock;
             (future, airlock)
         }
     }
@@ -135,17 +136,15 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
 
 impl<'s, Y, R, F: Future> Drop for Gen<'s, Y, R, F> {
     fn drop(&mut self) {
-        // Safety: `state` is a `MaybeUninit` which is guaranteed to be initialized,
+        // Safety: `future` is a `MaybeUninit` which is guaranteed to be initialized,
         // because the only way to construct a `Gen` is with `Gen::new`, which
         // initializes it.
         //
-        // Drop `state` in place, by dropping each field in place. Drop `future` first,
-        // since it likely contains a reference to `airlock` (through the `co` object).
-        // Since we drop everything in place, the `Pin` invariants are not violated.
+        // Drop `future` in place first (likely contains a reference to airlock),
+        // Since we drop it in place, the `Pin` invariants are not violated.
+        // The airlock is regularly dropped when the `Shelf` goes out of scope.
         unsafe {
-            let state = self.state.as_mut().get_unchecked_mut();
-            ptr::drop_in_place(&mut state.future);
-            ptr::drop_in_place(&mut state.airlock);
+            ptr::drop_in_place((*self.state.0.get()).future.as_mut_ptr());
         }
     }
 }
