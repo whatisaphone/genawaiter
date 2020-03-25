@@ -1,9 +1,4 @@
-use std::{
-    future::Future,
-    mem::{ManuallyDrop, MaybeUninit},
-    pin::Pin,
-    ptr,
-};
+use std::{future::Future, mem::MaybeUninit, pin::Pin, ptr};
 
 use crate::{
     core::{advance, async_advance, Airlock as _, Next},
@@ -50,7 +45,7 @@ impl<Y, R, F: Future> Default for Shelf<Y, R, F> {
 /// [_See the module-level docs for examples._](.)
 pub struct Gen<'s, Y, R, F: Future> {
     airlock: &'s Airlock<Y, R>,
-    future: ManuallyDrop<Pin<&'s mut F>>,
+    future: Pin<&'s mut F>,
 }
 
 impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
@@ -104,13 +99,14 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
         shelf.future.as_mut_ptr().write(producer(Co::new(airlock)));
         // Safety: The `MaybeUninit` is initialized by now, so its safe to create
         // a reference to the future itself
-        // todo: can be replaced by `MaybeUninit::get_mut` once stabilized
+        // NB: can be replaced by `MaybeUninit::get_mut` once stabilized
         let init = &mut *shelf.future.as_mut_ptr();
         // Safety: The `shelf` remains borrowed during the entire lifetime of
         // the `Gen`and is hence pinned.
-        let future = ManuallyDrop::new(Pin::new_unchecked(init));
-
-        Self { airlock, future }
+        Self {
+            airlock,
+            future: Pin::new_unchecked(init),
+        }
     }
 
     /// Resumes execution of the generator.
@@ -135,17 +131,11 @@ impl<'s, Y, R, F: Future> Drop for Gen<'s, Y, R, F> {
         // initialized, because the only way to construct a `Gen` is with
         // `Gen::new`, which initializes it.
         //
-        // The pinned reference to the initialized future is wrapped in a
-        // `ManuallyDrop` because `Pin::get_unchecked_mut` consumes the `Pin`,
-        // which would require moving it (the pin) out of the `Gen` first.
-        //
         // Drop `future` in place first (it likely contains a reference to airlock).
         // Since we drop it in place, the `Pin` invariants are not violated.
         // The airlock is regularly dropped when the `Shelf` goes out of scope.
         unsafe {
-            // todo: can be replaced by `ManuallyDrop::take`, stabilized in 1.42
-            let future = ptr::read(&*self.future);
-            ptr::drop_in_place(future.get_unchecked_mut());
+            ptr::drop_in_place(self.future.as_mut().get_unchecked_mut());
         }
     }
 }
