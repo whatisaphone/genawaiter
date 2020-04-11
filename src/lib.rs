@@ -67,7 +67,6 @@ let count_to_ten = gen!({
 To re-use logic between multiple generators, you can use a macro from the `producer`
 family, and then pass the producer to `Gen::new`.
 
-- [`stack_producer!`] and [`let_gen_using!`](stack/macro.let_gen_using.html)
 - [`rc_producer!`] and [`Gen::new`](rc::Gen::new)
 - [`sync_producer!`] and [`Gen::new`](sync::Gen::new)
 
