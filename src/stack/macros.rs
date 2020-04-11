@@ -63,36 +63,3 @@ mod tests {
         let _ = escaped_co.yield_(10);
     }
 }
-
-#[allow(dead_code)]
-mod doctests {
-    /**
-    ```compile_fail
-    use genawaiter::{stack::{let_gen_using, Co}, Generator};
-
-    async fn producer(co: Co<'_, i32>) {}
-
-    fn create_generator() -> impl Generator {
-        let_gen_using!(gen, producer);
-        gen
-    }
-    ```
-    */
-    fn generator_cannot_escape() {}
-
-    /**
-    This test is exactly the same as above, but doesn't trigger the failure.
-
-    ```
-    use genawaiter::{stack::{let_gen_using, Co}, Generator};
-
-    async fn producer(co: Co<'_, i32>) {}
-
-    fn create_generator() { // -> impl Generator {
-        let_gen_using!(gen, producer);
-        // gen
-    }
-    ```
-    */
-    fn generator_cannot_escape_baseline() {}
-}

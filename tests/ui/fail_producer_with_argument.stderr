@@ -1,0 +1,5 @@
+error: A generator producer cannot accept any arguments. Instead, consider using a closure and capturing the values you need.
+ --> $DIR/fail_producer_with_argument.rs:4:1
+  |
+4 | async fn odds(co: Co<'_, u8>) {
+  | ^^^^^
