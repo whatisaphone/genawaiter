@@ -1,0 +1,13 @@
+error[E0597]: `shelf` does not live long enough
+  --> $DIR/stack_fail_when_co_is_static.rs:8:5
+   |
+8  |     let_gen_using!(gen, producer);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     borrowed value does not live long enough
+   |     argument requires that `shelf` is borrowed for `'static`
+9  |     let _ = gen;
+10 | }
+   | - `shelf` dropped here while still borrowed
+   |
+   = note: this error originates in a macro outside of the current crate (in Nightly builds, run with -Z external-macro-backtrace for more info)
