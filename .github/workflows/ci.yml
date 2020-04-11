@@ -14,7 +14,7 @@ jobs:
           profile: minimal
           components: rustfmt
           override: true
-      - run: cargo fmt ${{ matrix.manifest }} -- --check
+      - run: cargo fmt -- --check
       - run: |
           for manifest in examples/*/Cargo.toml; do
             cargo fmt --manifest-path "$manifest" -- --check
