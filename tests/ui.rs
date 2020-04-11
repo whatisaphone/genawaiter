@@ -1,3 +1,5 @@
+#[rustversion::stable]
+#[cfg(feature = "proc_macro")]
 #[test]
 fn ui() {
     let t = trybuild::TestCases::new();
