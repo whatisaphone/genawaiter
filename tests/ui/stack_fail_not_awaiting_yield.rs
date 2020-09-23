@@ -1,7 +1,7 @@
-use genawaiter::{stack::Co};
+use genawaiter::stack::Co;
 
 #[allow(unused_variables)]
-async fn wrong(mut co: Co<i32>) {
+async fn wrong(mut co: Co<'_, i32>) {
     let foo = co.yield_(10);
     let bar = co.yield_(20);
 }

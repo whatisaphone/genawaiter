@@ -20,7 +20,7 @@ fn test_basic() {
 #[cfg(feature = "futures03")]
 #[test]
 fn test_stream() {
-    use futures::executor::block_on_stream;
+    use futures_executor::block_on_stream;
 
     let gen = Gen::new(odd_numbers_less_than_ten);
     let xs: Vec<_> = block_on_stream(gen).collect();

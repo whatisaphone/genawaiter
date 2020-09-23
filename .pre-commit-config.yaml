@@ -7,7 +7,7 @@ repos:
         name: fmt
         language: system
         files: '[.]rs$'
-        entry: rustup run nightly-2019-11-06 rustfmt
+        entry: rustup run nightly-2020-06-25 rustfmt
 
       - id: check
         name: check

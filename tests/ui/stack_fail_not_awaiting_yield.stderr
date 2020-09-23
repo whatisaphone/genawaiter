@@ -1,5 +1,9 @@
-error[E0726]: implicit elided lifetime not allowed here
- --> $DIR/stack_fail_not_awaiting_yield.rs:4:24
+error[E0499]: cannot borrow `co` as mutable more than once at a time
+ --> $DIR/stack_fail_not_awaiting_yield.rs:6:15
   |
-4 | async fn wrong(mut co: Co<i32>) {
-  |                        ^^^^^^^ help: indicate the anonymous lifetime: `Co<'_, i32>`
+5 |     let foo = co.yield_(10);
+  |               -- first mutable borrow occurs here
+6 |     let bar = co.yield_(20);
+  |               ^^ second mutable borrow occurs here
+7 | }
+  | - first borrow might be used here, when `foo` is dropped and runs the destructor for type `impl std::future::Future`

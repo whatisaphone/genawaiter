@@ -354,7 +354,7 @@ mod tests {
         testing::{DummyFuture, SlowFuture},
         GeneratorState,
     };
-    use futures::executor::block_on;
+    use futures_executor::block_on;
     use std::{
         cell::{Cell, RefCell},
         future::Future,
