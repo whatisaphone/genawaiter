@@ -2,12 +2,9 @@
 #![warn(clippy::cargo, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
-extern crate proc_macro;
-
 use crate::visit::YieldReplace;
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, abort_call_site, proc_macro_error};
-use proc_macro_hack::proc_macro_hack;
 use quote::quote;
 use std::string::ToString;
 use syn::{
@@ -42,7 +39,7 @@ pub fn stack_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-#[proc_macro_hack]
+#[proc_macro]
 #[proc_macro_error]
 pub fn stack_producer(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as ExprBlock);
@@ -76,7 +73,7 @@ pub fn sync_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-#[proc_macro_hack]
+#[proc_macro]
 #[proc_macro_error]
 pub fn sync_producer(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as ExprBlock);
@@ -109,7 +106,7 @@ pub fn rc_producer_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-#[proc_macro_hack]
+#[proc_macro]
 #[proc_macro_error]
 pub fn rc_producer(input: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(input as ExprBlock);
@@ -164,17 +161,16 @@ fn add_coroutine_arg(func: &mut ItemFn, co_ty: &str) {
             }
         }
     });
-    if !co_arg_found {
-        let co_arg: FnArg = match parse_str::<FnArg>(co_ty) {
-            Ok(s) => s,
-            Err(err) => abort_call_site!(format!("invalid type for Co yield {}", err)),
-        };
-        func.sig.inputs.push_value(co_arg)
-    } else {
+    if co_arg_found {
         abort!(
             func.sig.span(),
             "A generator producer cannot accept any arguments. Instead, consider \
              using a closure and capturing the values you need.",
         )
     }
+    let co_arg: FnArg = match parse_str::<FnArg>(co_ty) {
+        Ok(s) => s,
+        Err(err) => abort_call_site!(format!("invalid type for Co yield {}", err)),
+    };
+    func.sig.inputs.push_value(co_arg)
 }

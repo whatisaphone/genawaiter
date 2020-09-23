@@ -30,7 +30,7 @@ fn test_shelf() {
 #[cfg(feature = "futures03")]
 #[test]
 fn test_stream() {
-    use futures::executor::block_on_stream;
+    use futures_executor::block_on_stream;
 
     let_gen_using!(gen, odd_numbers_less_than_ten);
     let xs: Vec<_> = block_on_stream(gen).collect();
@@ -180,9 +180,9 @@ fn stack_convenience_macro_resume() {
     use genawaiter::{stack::let_gen, yield_, GeneratorState};
 
     let_gen!(gen, {
-        let resume_arg = yield_!(10_u8);
+        let mut resume_arg = yield_!(10_u8);
         assert_eq!(resume_arg, "abc");
-        let resume_arg = yield_!(20_u8);
+        resume_arg = yield_!(20_u8);
         assert_eq!(resume_arg, "def");
     });
 

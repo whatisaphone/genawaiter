@@ -28,7 +28,8 @@ mod tests {
         rc::{Co, Gen},
         testing::SlowFuture,
     };
-    use futures::{executor::block_on_stream, stream};
+    use futures_executor::block_on_stream;
+    use futures_util::stream;
 
     #[test]
     fn blocking() {
