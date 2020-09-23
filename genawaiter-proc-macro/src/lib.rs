@@ -161,17 +161,16 @@ fn add_coroutine_arg(func: &mut ItemFn, co_ty: &str) {
             }
         }
     });
-    if !co_arg_found {
-        let co_arg: FnArg = match parse_str::<FnArg>(co_ty) {
-            Ok(s) => s,
-            Err(err) => abort_call_site!(format!("invalid type for Co yield {}", err)),
-        };
-        func.sig.inputs.push_value(co_arg)
-    } else {
+    if co_arg_found {
         abort!(
             func.sig.span(),
             "A generator producer cannot accept any arguments. Instead, consider \
              using a closure and capturing the values you need.",
         )
     }
+    let co_arg: FnArg = match parse_str::<FnArg>(co_ty) {
+        Ok(s) => s,
+        Err(err) => abort_call_site!(format!("invalid type for Co yield {}", err)),
+    };
+    func.sig.inputs.push_value(co_arg)
 }

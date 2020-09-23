@@ -119,9 +119,9 @@ fn rc_convenience_macro_resume() {
     use genawaiter::{rc::gen, yield_, GeneratorState};
 
     let mut gen = gen!({
-        let resume_arg = yield_!(10_u8);
+        let mut resume_arg = yield_!(10_u8);
         assert_eq!(resume_arg, "abc");
-        let resume_arg = yield_!(20_u8);
+        resume_arg = yield_!(20_u8);
         assert_eq!(resume_arg, "def");
     });
 
