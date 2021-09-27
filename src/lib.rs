@@ -266,9 +266,6 @@ extern crate self as genawaiter;
 
 pub use crate::ops::{Coroutine, Generator, GeneratorState};
 
-#[cfg(feature = "proc_macro")]
-use proc_macro_hack::proc_macro_hack;
-
 /// Creates a producer for use with [`sync::Gen`].
 ///
 /// A producer can later be turned into a generator using
@@ -290,7 +287,6 @@ use proc_macro_hack::proc_macro_hack;
 /// # my_generator.resume();
 /// ```
 #[cfg(feature = "proc_macro")]
-#[proc_macro_hack]
 pub use genawaiter_proc_macro::sync_producer;
 
 /// Creates a producer for use with [`rc::Gen`].
@@ -314,12 +310,10 @@ pub use genawaiter_proc_macro::sync_producer;
 /// # my_generator.resume();
 /// ```
 #[cfg(feature = "proc_macro")]
-#[proc_macro_hack]
 pub use genawaiter_proc_macro::rc_producer;
 
 #[doc(hidden)] // This is not quite usable currently, so hide it for now.
 #[cfg(feature = "proc_macro")]
-#[proc_macro_hack]
 pub use genawaiter_proc_macro::stack_producer;
 
 mod core;
