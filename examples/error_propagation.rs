@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let counter = gen!({
             for num in 0..10 {
                 // Perform some fallible operation, and yield the result (or the error)
-                let string = yield_!(process(num));
+                let _string = yield_!(process(num));
             }
         });
 

@@ -5,7 +5,7 @@ use crate::{ops::GeneratorState, stack::let_gen_using};
 
 #[test]
 fn async_closure() {
-    let_gen_using!(gen, async move |co| {
+    let_gen_using!(gen, async move |mut co| {
         co.yield_(10).await;
         "done"
     });
