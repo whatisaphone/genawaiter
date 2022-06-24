@@ -1,8 +1,9 @@
+extern crate alloc;
+
 use crate::{core, core::Next};
-use std::{
-    mem,
-    sync::{Arc, Mutex},
-};
+use ::core::mem;
+use alloc::sync::Arc;
+use std::sync::Mutex;
 
 pub struct Airlock<Y, R>(Arc<Mutex<Next<Y, R>>>);
 

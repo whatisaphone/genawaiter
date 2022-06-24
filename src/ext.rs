@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
-use std::mem;
+use core::mem;
 
 pub trait MaybeUninitExt<T> {
     unsafe fn assume_init_get_mut(&mut self) -> &mut T;

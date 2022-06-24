@@ -13,7 +13,7 @@ You can create a basic generator with [`let_gen!`] and [`yield_!`].
 let_gen!(my_generator, {
     yield_!(10);
 });
-# my_generator.resume();
+# my_generator.resume(());
 # }
 ```
 
@@ -28,7 +28,7 @@ async fn my_producer(mut co: Co<'_, u8>) {
 }
 let mut shelf = Shelf::new();
 let mut my_generator = unsafe { Gen::new(&mut shelf, my_producer) };
-# my_generator.resume();
+# my_generator.resume(());
 ```
 
 # Examples
@@ -88,7 +88,7 @@ let two = 2;
 let_gen!(multiply, {
     yield_!(10 * two);
 });
-assert_eq!(multiply.resume(), GeneratorState::Yielded(20));
+assert_eq!(multiply.resume(()), GeneratorState::Yielded(20));
 # }
 ```
 
@@ -103,12 +103,12 @@ assert_eq!(multiply.resume(), GeneratorState::Yielded(20));
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { yield_!(n); }
 # });
 #
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(1));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(3));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(5));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(7));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(9));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Complete(()));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(1));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(3));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(5));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(7));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(9));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Complete(()));
 # }
 ```
 
@@ -133,9 +133,9 @@ let_gen!(check_numbers, {
     assert_eq!(num, 2);
 });
 
-check_numbers.resume_with(0);
-check_numbers.resume_with(1);
-check_numbers.resume_with(2);
+check_numbers.resume(0);
+check_numbers.resume(1);
+check_numbers.resume(2);
 # }
 ```
 
@@ -155,9 +155,9 @@ let_gen!(numbers_then_string, {
     "done!"
 });
 
-assert_eq!(numbers_then_string.resume(), GeneratorState::Yielded(10));
-assert_eq!(numbers_then_string.resume(), GeneratorState::Yielded(20));
-assert_eq!(numbers_then_string.resume(), GeneratorState::Complete("done!"));
+assert_eq!(numbers_then_string.resume(()), GeneratorState::Yielded(10));
+assert_eq!(numbers_then_string.resume(()), GeneratorState::Yielded(20));
+assert_eq!(numbers_then_string.resume(()), GeneratorState::Complete("done!"));
 # }
 ```
 
@@ -174,7 +174,7 @@ async fn produce() {
 }
 
 let_gen_using!(gen, produce);
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
 # }
 ```
 
@@ -208,9 +208,9 @@ let_gen_using!(gen, async move |co| {
     co.yield_(10).await;
     co.yield_(20).await;
 });
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Complete(()));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(()), GeneratorState::Complete(()));
 ```
 
 ## Using the low-level API with an async <del>closure</del> faux·sure (for stable Rust)
@@ -222,9 +222,9 @@ let_gen_using!(gen, |mut co| async move {
     co.yield_(10).await;
     co.yield_(20).await;
 });
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Complete(()));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(()), GeneratorState::Complete(()));
 ```
 
 ## Using the low-level API with function arguments
@@ -243,9 +243,9 @@ async fn multiples_of(num: i32, mut co: Co<'_, i32>) {
 }
 
 let_gen_using!(gen, |co| multiples_of(10, co));
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Yielded(30));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(30));
 ```
 */
 
@@ -340,18 +340,18 @@ mod nightly_tests;
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+
     use crate::{
         stack::{let_gen_using, Co},
         testing::DummyFuture,
         GeneratorState,
     };
-    use std::{
+    use core::{
         cell::RefCell,
-        sync::{
-            atomic::{AtomicBool, Ordering},
-            Arc,
-        },
+        sync::atomic::{AtomicBool, Ordering},
     };
+    use alloc::sync::Arc;
 
     async fn simple_producer(mut co: Co<'_, i32>) -> &'static str {
         co.yield_(10).await;
@@ -361,8 +361,8 @@ mod tests {
     #[test]
     fn function() {
         let_gen_using!(gen, simple_producer);
-        assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-        assert_eq!(gen.resume(), GeneratorState::Complete("done"));
+        assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+        assert_eq!(gen.resume(()), GeneratorState::Complete("done"));
     }
 
     #[test]
@@ -373,8 +373,8 @@ mod tests {
         }
 
         let_gen_using!(gen, |co| gen(5, co));
-        assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-        assert_eq!(gen.resume(), GeneratorState::Complete("done"));
+        assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+        assert_eq!(gen.resume(()), GeneratorState::Complete("done"));
     }
 
     #[test]
@@ -390,13 +390,13 @@ mod tests {
         let_gen_using!(gen, |co| gen(&resumes, co));
         assert_eq!(*resumes.borrow(), &[] as &[&str]);
 
-        assert_eq!(gen.resume_with("ignored"), GeneratorState::Yielded(10));
+        assert_eq!(gen.resume("ignored"), GeneratorState::Yielded(10));
         assert_eq!(*resumes.borrow(), &[] as &[&str]);
 
-        assert_eq!(gen.resume_with("abc"), GeneratorState::Yielded(20));
+        assert_eq!(gen.resume("abc"), GeneratorState::Yielded(20));
         assert_eq!(*resumes.borrow(), &["abc"]);
 
-        assert_eq!(gen.resume_with("def"), GeneratorState::Complete(()));
+        assert_eq!(gen.resume("def"), GeneratorState::Complete(()));
         assert_eq!(*resumes.borrow(), &["abc", "def"]);
     }
 
@@ -408,7 +408,7 @@ mod tests {
         }
 
         let_gen_using!(gen, wrong);
-        gen.resume();
+        gen.resume(());
     }
 
     #[test]
@@ -420,7 +420,7 @@ mod tests {
         }
 
         let_gen_using!(gen, wrong);
-        gen.resume();
+        gen.resume(());
     }
 
     #[test]
@@ -431,7 +431,7 @@ mod tests {
         }
 
         let_gen_using!(gen, shenanigans);
-        let mut escaped_co = match gen.resume() {
+        let mut escaped_co = match gen.resume(()) {
             GeneratorState::Yielded(_) => panic!(),
             GeneratorState::Complete(co) => co,
         };
@@ -460,7 +460,7 @@ mod tests {
                     unreachable!();
                 }
             });
-            assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+            assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
             // `gen` is only a reference to the generator, and dropping a reference has
             // no effect. The underlying generator is hidden behind macro hygiene and so
             // cannot be dropped early.

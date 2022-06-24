@@ -1,5 +1,5 @@
 use crate::{ops::GeneratorState, stack::generator::Gen};
-use std::future::Future;
+use core::future::Future;
 
 impl<'s, Y, F: Future<Output = ()>> IntoIterator for Gen<'s, Y, (), F> {
     type Item = Y;
@@ -19,7 +19,7 @@ impl<'s, Y, F: Future<Output = ()>> Iterator for IntoIter<'s, Y, F> {
     type Item = Y;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.generator.resume() {
+        match self.generator.resume(()) {
             GeneratorState::Yielded(x) => Some(x),
             GeneratorState::Complete(()) => None,
         }
@@ -43,7 +43,7 @@ impl<'r, 's, Y, F: Future<Output = ()>> Iterator for MutIntoIter<'r, 's, Y, F> {
     type Item = Y;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.generator.resume() {
+        match self.generator.resume(()) {
             GeneratorState::Yielded(x) => Some(x),
             GeneratorState::Complete(()) => None,
         }
@@ -53,7 +53,7 @@ impl<'r, 's, Y, F: Future<Output = ()>> Iterator for MutIntoIter<'r, 's, Y, F> {
 #[cfg(test)]
 mod tests {
     use crate::stack::{let_gen_using, Co, Gen, Shelf};
-    use std::iter::IntoIterator;
+    use core::iter::IntoIterator;
 
     async fn produce(mut co: Co<'_, i32>) {
         co.yield_(10).await;

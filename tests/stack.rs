@@ -186,7 +186,7 @@ fn stack_convenience_macro_resume() {
         assert_eq!(resume_arg, "def");
     });
 
-    assert_eq!(gen.resume_with("ignored"), GeneratorState::Yielded(10));
-    assert_eq!(gen.resume_with("abc"), GeneratorState::Yielded(20));
-    assert_eq!(gen.resume_with("def"), GeneratorState::Complete(()));
+    assert_eq!(gen.resume("ignored"), GeneratorState::Yielded(10));
+    assert_eq!(gen.resume("abc"), GeneratorState::Yielded(20));
+    assert_eq!(gen.resume("def"), GeneratorState::Complete(()));
 }
