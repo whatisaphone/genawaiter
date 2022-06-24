@@ -1,4 +1,4 @@
-use std::pin::Pin;
+use core::pin::Pin;
 
 /// A trait implemented for generator types.
 ///

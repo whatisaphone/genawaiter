@@ -9,7 +9,6 @@ use proc_macro::TokenStream;
 use proc_macro_error::{abort, abort_call_site, proc_macro_error};
 use proc_macro_hack::proc_macro_hack;
 use quote::quote;
-use std::string::ToString;
 use syn::{
     self,
     parse_macro_input,

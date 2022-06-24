@@ -321,7 +321,7 @@ mod tests {
         testing::DummyFuture,
         GeneratorState,
     };
-    use std::{
+    use core::{
         cell::{Cell, RefCell},
         future::Future,
     };

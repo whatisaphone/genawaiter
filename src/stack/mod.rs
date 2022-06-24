@@ -340,18 +340,18 @@ mod nightly_tests;
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+
     use crate::{
         stack::{let_gen_using, Co},
         testing::DummyFuture,
         GeneratorState,
     };
-    use std::{
+    use core::{
         cell::RefCell,
-        sync::{
-            atomic::{AtomicBool, Ordering},
-            Arc,
-        },
+        sync::atomic::{AtomicBool, Ordering},
     };
+    use alloc::sync::Arc;
 
     async fn simple_producer(mut co: Co<'_, i32>) -> &'static str {
         co.yield_(10).await;

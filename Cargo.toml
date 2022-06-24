@@ -30,8 +30,12 @@ rustversion = "1.0.2"
 trybuild = "1"
 
 [features]
-default = ["proc_macro"]
+alloc = []
+default = ["proc_macro", "rc", "sync"]
 futures03 = ["futures-core"]
 nightly = []
-strict = []
 proc_macro = ["genawaiter-proc-macro", "proc-macro-hack", "genawaiter-macro/proc_macro"]
+rc = []
+std = []
+strict = []
+sync = []

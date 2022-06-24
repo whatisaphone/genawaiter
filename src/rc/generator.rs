@@ -3,7 +3,7 @@ use crate::{
     ops::{Generator, GeneratorState},
     rc::{engine::Airlock, Co},
 };
-use std::{future::Future, pin::Pin};
+use core::{future::Future, pin::Pin};
 
 /// This is a generator which stores its state on the heap.
 ///

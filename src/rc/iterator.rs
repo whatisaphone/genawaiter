@@ -1,5 +1,5 @@
 use crate::{ops::GeneratorState, rc::Gen};
-use std::future::Future;
+use core::future::Future;
 
 impl<Y, F: Future<Output = ()>> IntoIterator for Gen<Y, (), F> {
     type Item = Y;
@@ -29,7 +29,7 @@ impl<Y, F: Future<Output = ()>> Iterator for IntoIter<Y, F> {
 #[cfg(test)]
 mod tests {
     use crate::rc::{Co, Gen};
-    use std::iter::IntoIterator;
+    use core::iter::IntoIterator;
 
     async fn produce(mut co: Co<i32>) {
         co.yield_(10).await;

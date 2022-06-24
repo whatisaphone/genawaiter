@@ -1,5 +1,8 @@
+extern crate alloc;
+
 use crate::{core, core::Next};
-use std::{cell::Cell, rc::Rc};
+use ::core::cell::Cell;
+use alloc::rc::Rc;
 
 pub struct Airlock<Y, R>(Rc<Cell<Next<Y, R>>>);
 

@@ -3,7 +3,7 @@ use futures_core::{
     task::{Context, Poll},
     Stream,
 };
-use std::{future::Future, pin::Pin};
+use core::{future::Future, pin::Pin};
 
 impl<Y, F: Future<Output = ()>> Stream for Gen<Y, (), F> {
     type Item = Y;

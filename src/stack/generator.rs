@@ -1,4 +1,4 @@
-use std::{future::Future, mem::MaybeUninit, pin::Pin, ptr};
+use core::{future::Future, mem::MaybeUninit, pin::Pin, ptr};
 
 use crate::{
     core::{advance, async_advance, Airlock as _, Next},
