@@ -65,7 +65,7 @@ mod tests {
         let _: &dyn Sync = &arc;
 
         let mut guard = arc.lock().unwrap();
-        assert_eq!(guard.resume(), GeneratorState::Yielded(1));
-        assert_eq!(guard.resume(), GeneratorState::Yielded(3));
+        assert_eq!(guard.resume(()), GeneratorState::Yielded(1));
+        assert_eq!(guard.resume(()), GeneratorState::Yielded(3));
     }
 }

@@ -2,7 +2,7 @@ use std::{future::Future, mem::MaybeUninit, pin::Pin, ptr};
 
 use crate::{
     core::{advance, async_advance, Airlock as _, Next},
-    ops::{Coroutine, GeneratorState},
+    ops::{Generator, GeneratorState},
     stack::engine::{Airlock, Co},
 };
 
@@ -119,9 +119,24 @@ impl<'s, Y, R, F: Future> Gen<'s, Y, R, F> {
     /// `Completed` is returned.
     ///
     /// [_See the module-level docs for examples._](.)
-    pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
+    pub fn resume(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
         self.airlock.replace(Next::Resume(arg));
         advance(self.future.as_mut(), &self.airlock)
+    }
+
+    /// Resumes execution of the generator.
+    ///
+    /// If the generator pauses without yielding, `Poll::Pending` is returned.
+    /// If the generator yields a value, `Poll::Ready(Yielded)` is returned.
+    /// Otherwise, `Poll::Ready(Completed)` is returned.
+    ///
+    /// [_See the module-level docs for examples._](.)
+    pub fn async_resume(
+        &mut self,
+        arg: R
+    ) -> impl Future<Output = GeneratorState<Y, F::Output>> + '_ {
+        self.airlock.replace(Next::Resume(arg));
+        async_advance(self.future.as_mut(), self.airlock)
     }
 }
 
@@ -140,43 +155,16 @@ impl<'s, Y, R, F: Future> Drop for Gen<'s, Y, R, F> {
     }
 }
 
-impl<'s, Y, F: Future> Gen<'s, Y, (), F> {
-    /// Resumes execution of the generator.
-    ///
-    /// If the generator yields a value, `Yielded` is returned. Otherwise,
-    /// `Completed` is returned.
-    ///
-    /// [_See the module-level docs for examples._](.)
-    pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
-        self.resume_with(())
-    }
-
-    /// Resumes execution of the generator.
-    ///
-    /// If the generator pauses without yielding, `Poll::Pending` is returned.
-    /// If the generator yields a value, `Poll::Ready(Yielded)` is returned.
-    /// Otherwise, `Poll::Ready(Completed)` is returned.
-    ///
-    /// [_See the module-level docs for examples._](.)
-    pub fn async_resume(
-        &mut self,
-    ) -> impl Future<Output = GeneratorState<Y, F::Output>> + '_ {
-        self.airlock.replace(Next::Resume(()));
-        async_advance(self.future.as_mut(), self.airlock)
-    }
-}
-
-impl<'s, Y, R, F: Future> Coroutine for Gen<'s, Y, R, F> {
+impl<'s, Y, R, F: Future> Generator<R> for Gen<'s, Y, R, F> {
     type Yield = Y;
-    type Resume = R;
     type Return = F::Output;
 
-    fn resume_with(
+    fn resume(
         self: Pin<&mut Self>,
         arg: R,
     ) -> GeneratorState<Self::Yield, Self::Return> {
-        // Safety: `Gen::resume_with` does not move `self`.
+        // Safety: `Gen::resume` does not move `self`.
         let this = unsafe { self.get_unchecked_mut() };
-        this.resume_with(arg)
+        this.resume(arg)
     }
 }

@@ -13,7 +13,7 @@ You can create a basic generator with [`gen!`] and [`yield_!`].
 let mut my_generator = gen!({
     yield_!(10);
 });
-# my_generator.resume();
+# my_generator.resume(());
 # }
 ```
 
@@ -29,7 +29,7 @@ let my_producer = producer!({
     yield_!(10);
 });
 let mut my_generator = Gen::new(my_producer);
-# my_generator.resume();
+# my_generator.resume(());
 # }
 ```
 
@@ -42,7 +42,7 @@ async fn my_producer(mut co: Co<u8>) {
     co.yield_(10).await;
 }
 let mut my_generator = Gen::new(my_producer);
-# my_generator.resume();
+# my_generator.resume(());
 ```
 
 # Storing a generator in a `static`
@@ -134,7 +134,7 @@ let two = 2;
 let mut multiply = gen!({
     yield_!(10 * two);
 });
-assert_eq!(multiply.resume(), GeneratorState::Yielded(20));
+assert_eq!(multiply.resume(()), GeneratorState::Yielded(20));
 # }
 ```
 
@@ -149,12 +149,12 @@ assert_eq!(multiply.resume(), GeneratorState::Yielded(20));
 #     for n in (1..).step_by(2).take_while(|&n| n < 10) { yield_!(n); }
 # });
 #
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(1));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(3));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(5));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(7));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Yielded(9));
-assert_eq!(odds_under_ten.resume(), GeneratorState::Complete(()));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(1));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(3));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(5));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(7));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Yielded(9));
+assert_eq!(odds_under_ten.resume(()), GeneratorState::Complete(()));
 # }
 ```
 
@@ -179,9 +179,9 @@ let mut check_numbers = gen!({
     assert_eq!(num, 2);
 });
 
-check_numbers.resume_with(0);
-check_numbers.resume_with(1);
-check_numbers.resume_with(2);
+check_numbers.resume(0);
+check_numbers.resume(1);
+check_numbers.resume(2);
 # }
 ```
 
@@ -201,9 +201,9 @@ let mut numbers_then_string = gen!({
     "done!"
 });
 
-assert_eq!(numbers_then_string.resume(), GeneratorState::Yielded(10));
-assert_eq!(numbers_then_string.resume(), GeneratorState::Yielded(20));
-assert_eq!(numbers_then_string.resume(), GeneratorState::Complete("done!"));
+assert_eq!(numbers_then_string.resume(()), GeneratorState::Yielded(10));
+assert_eq!(numbers_then_string.resume(()), GeneratorState::Yielded(20));
+assert_eq!(numbers_then_string.resume(()), GeneratorState::Complete("done!"));
 # }
 ```
 
@@ -220,7 +220,7 @@ async fn produce() {
 }
 
 let mut gen = Gen::new(produce);
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
 # }
 ```
 
@@ -237,7 +237,7 @@ let produce = producer!({
 });
 
 let mut gen = Gen::new(produce);
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
 # }
 ```
 
@@ -271,9 +271,9 @@ let gen = Gen::new(async move |co| {
     co.yield_(10).await;
     co.yield_(20).await;
 });
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Complete(()));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(()), GeneratorState::Complete(()));
 ```
 
 ## Using the low-level API with an async <del>closure</del> faux·sure (for stable Rust)
@@ -285,9 +285,9 @@ let mut gen = Gen::new(|mut co| async move {
     co.yield_(10).await;
     co.yield_(20).await;
 });
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Complete(()));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(()), GeneratorState::Complete(()));
 ```
 
 ## Using the low-level API with function arguments
@@ -306,9 +306,9 @@ async fn multiples_of(num: i32, mut co: Co<i32>) {
 }
 
 let mut gen = Gen::new(|co| multiples_of(10, co));
-assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-assert_eq!(gen.resume(), GeneratorState::Yielded(30));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(20));
+assert_eq!(gen.resume(()), GeneratorState::Yielded(30));
 ```
 */
 
@@ -368,8 +368,8 @@ mod tests {
     #[test]
     fn function() {
         let mut gen = Gen::new(simple_producer);
-        assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-        assert_eq!(gen.resume(), GeneratorState::Complete("done"));
+        assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+        assert_eq!(gen.resume(()), GeneratorState::Complete("done"));
     }
 
     #[test]
@@ -380,8 +380,8 @@ mod tests {
         }
 
         let mut gen = Gen::new(|co| gen(5, co));
-        assert_eq!(gen.resume(), GeneratorState::Yielded(10));
-        assert_eq!(gen.resume(), GeneratorState::Complete("done"));
+        assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
+        assert_eq!(gen.resume(()), GeneratorState::Complete("done"));
     }
 
     #[test]
@@ -397,13 +397,13 @@ mod tests {
         let mut gen = Gen::new(|co| gen(&resumes, co));
         assert_eq!(*resumes.borrow(), &[] as &[&str]);
 
-        assert_eq!(gen.resume_with("ignored"), GeneratorState::Yielded(10));
+        assert_eq!(gen.resume("ignored"), GeneratorState::Yielded(10));
         assert_eq!(*resumes.borrow(), &[] as &[&str]);
 
-        assert_eq!(gen.resume_with("abc"), GeneratorState::Yielded(20));
+        assert_eq!(gen.resume("abc"), GeneratorState::Yielded(20));
         assert_eq!(*resumes.borrow(), &["abc"]);
 
-        assert_eq!(gen.resume_with("def"), GeneratorState::Complete(()));
+        assert_eq!(gen.resume("def"), GeneratorState::Complete(()));
         assert_eq!(*resumes.borrow(), &["abc", "def"]);
     }
 
@@ -419,13 +419,13 @@ mod tests {
         async fn run_test() {
             let mut gen = Gen::new(produce);
 
-            let x = gen.async_resume().await;
+            let x = gen.async_resume(()).await;
             assert_eq!(x, GeneratorState::Yielded(10));
 
-            let x = gen.async_resume().await;
+            let x = gen.async_resume(()).await;
             assert_eq!(x, GeneratorState::Yielded(20));
 
-            let x = gen.async_resume().await;
+            let x = gen.async_resume(()).await;
             assert_eq!(x, GeneratorState::Complete(()));
         }
 
@@ -440,7 +440,7 @@ mod tests {
         }
 
         let mut gen = Gen::new(wrong);
-        gen.resume();
+        gen.resume(());
     }
 
     #[test]
@@ -452,7 +452,7 @@ mod tests {
         }
 
         let mut gen = Gen::new(wrong);
-        gen.resume();
+        gen.resume(());
     }
 
     #[test]
@@ -463,7 +463,7 @@ mod tests {
         }
 
         let mut gen = Gen::new(shenanigans);
-        let mut escaped_co = match gen.resume() {
+        let mut escaped_co = match gen.resume(()) {
             GeneratorState::Yielded(_) => panic!(),
             GeneratorState::Complete(co) => co,
         };
@@ -513,15 +513,15 @@ mod tests {
             addrs: &mut Vec<*const i32>,
         ) -> Gen<i32, (), impl Future<Output = &'static str> + '_> {
             let mut gen = Gen::new(move |co| produce(addrs, co));
-            assert_eq!(gen.resume(), GeneratorState::Yielded(10));
+            assert_eq!(gen.resume(()), GeneratorState::Yielded(10));
             gen
         }
 
         let mut addrs = Vec::new();
         let mut gen = create_generator(&mut addrs);
 
-        assert_eq!(gen.resume(), GeneratorState::Yielded(20));
-        assert_eq!(gen.resume(), GeneratorState::Complete("done"));
+        assert_eq!(gen.resume(()), GeneratorState::Yielded(20));
+        assert_eq!(gen.resume(()), GeneratorState::Complete("done"));
         drop(gen);
 
         assert!(addrs.iter().all(|&p| p == addrs[0]));

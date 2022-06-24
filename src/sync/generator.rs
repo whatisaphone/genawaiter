@@ -1,6 +1,6 @@
 use crate::{
     core::{advance, async_advance, Airlock as _, Next},
-    ops::{Coroutine, GeneratorState},
+    ops::{Generator, GeneratorState},
     sync::{engine::Airlock, Co},
 };
 use std::{future::Future, pin::Pin};
@@ -42,22 +42,11 @@ impl<Y, R, F: Future> Gen<Y, R, F> {
     /// `Completed` is returned.
     ///
     /// [_See the module-level docs for examples._](.)
-    pub fn resume_with(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
+    pub fn resume(&mut self, arg: R) -> GeneratorState<Y, F::Output> {
         self.airlock.replace(Next::Resume(arg));
         advance(self.future.as_mut(), &self.airlock)
     }
-}
 
-impl<Y, F: Future> Gen<Y, (), F> {
-    /// Resumes execution of the generator.
-    ///
-    /// If the generator yields a value, `Yielded` is returned. Otherwise,
-    /// `Completed` is returned.
-    ///
-    /// [_See the module-level docs for examples._](.)
-    pub fn resume(&mut self) -> GeneratorState<Y, F::Output> {
-        self.resume_with(())
-    }
 
     /// Resumes execution of the generator.
     ///
@@ -68,21 +57,21 @@ impl<Y, F: Future> Gen<Y, (), F> {
     /// [_See the module-level docs for examples._](.)
     pub fn async_resume(
         &mut self,
+        arg: R,
     ) -> impl Future<Output = GeneratorState<Y, F::Output>> + '_ {
-        self.airlock.replace(Next::Resume(()));
+        self.airlock.replace(Next::Resume(arg));
         async_advance(self.future.as_mut(), self.airlock.clone())
     }
 }
 
-impl<Y, R, F: Future> Coroutine for Gen<Y, R, F> {
+impl<Y, R, F: Future> Generator<R> for Gen<Y, R, F> {
     type Yield = Y;
-    type Resume = R;
     type Return = F::Output;
 
-    fn resume_with(
+    fn resume(
         mut self: Pin<&mut Self>,
         arg: R,
     ) -> GeneratorState<Self::Yield, Self::Return> {
-        Self::resume_with(&mut *self, arg)
+        Self::resume(&mut *self, arg)
     }
 }
