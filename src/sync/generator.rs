@@ -5,6 +5,9 @@ use crate::{
 };
 use std::{future::Future, pin::Pin};
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+use alloc::boxed::Box;
+
 /// This is a generator which can be shared between threads.
 ///
 /// [_See the module-level docs for examples._](.)

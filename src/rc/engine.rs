@@ -1,5 +1,11 @@
 use crate::{core, core::Next};
-use std::{cell::Cell, rc::Rc};
+use ::core::cell::Cell;
+
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+use alloc::rc::Rc;
+
+#[cfg(feature = "std")]
+use std::rc::Rc;
 
 pub struct Airlock<Y, R>(Rc<Cell<Next<Y, R>>>);
 

@@ -1,5 +1,5 @@
 use crate::{ops::GeneratorState, waker};
-use std::{
+use core::{
     future::Future,
     pin::Pin,
     task::{Context, Poll},

@@ -1,4 +1,4 @@
-use std::pin::Pin;
+use core::pin::Pin;
 
 /// A trait implemented for coroutines.
 ///
@@ -41,7 +41,6 @@ impl<C: Coroutine<Resume = ()>> Generator for C {
     type Yield = <Self as Coroutine>::Yield;
     type Return = <Self as Coroutine>::Return;
 
-    #[must_use]
     fn resume(self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
         self.resume_with(())
     }

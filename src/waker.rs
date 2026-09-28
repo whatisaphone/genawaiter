@@ -1,4 +1,4 @@
-use std::{
+use core::{
     ptr,
     task::{RawWaker, RawWakerVTable, Waker},
 };

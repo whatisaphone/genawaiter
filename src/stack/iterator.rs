@@ -1,11 +1,10 @@
 use crate::{ops::GeneratorState, stack::generator::Gen};
-use std::future::Future;
+use core::future::Future;
 
 impl<'s, Y, F: Future<Output = ()>> IntoIterator for Gen<'s, Y, (), F> {
     type Item = Y;
     type IntoIter = IntoIter<'s, Y, F>;
 
-    #[must_use]
     fn into_iter(self) -> Self::IntoIter {
         IntoIter { generator: self }
     }

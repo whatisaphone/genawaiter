@@ -1,5 +1,8 @@
 use crate::sync::{Co, Gen};
-use std::{future::Future, pin::Pin};
+use core::{future::Future, pin::Pin};
+
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+use alloc::boxed::Box;
 
 /// This is a type alias for generators which can be stored in a `'static`. It's
 /// only really needed to help the compiler's type inference along.

@@ -3,7 +3,10 @@ use crate::{
     ops::{Coroutine, GeneratorState},
     rc::{engine::Airlock, Co},
 };
-use std::{future::Future, pin::Pin};
+use core::{future::Future, pin::Pin};
+
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+use alloc::boxed::Box;
 
 /// This is a generator which stores its state on the heap.
 ///

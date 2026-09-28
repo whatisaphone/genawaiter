@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 /*!
 This crate implements generators for Rust. Generators are a feature common across many
 programming language. They let you yield a sequence of values from a function. A few
@@ -257,9 +258,12 @@ resume argument type to `()`, but in a `Coroutine` it can be anything.
 */
 
 #![cfg_attr(feature = "nightly", feature(async_closure))]
-#![warn(future_incompatible, rust_2018_compatibility, rust_2018_idioms, unused)]
+#![warn(future_incompatible, rust_2018_compatibility)]
 #![warn(missing_docs, clippy::cargo, clippy::pedantic)]
 #![cfg_attr(feature = "strict", deny(warnings))]
+
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+extern crate alloc;
 
 #[cfg(test)]
 extern crate self as genawaiter;
@@ -327,8 +331,10 @@ mod ext;
 #[macro_use]
 mod macros;
 mod ops;
+#[cfg(feature = "alloc")]
 pub mod rc;
 pub mod stack;
+#[cfg(feature = "std")]
 pub mod sync;
 #[cfg(test)]
 mod testing;

@@ -1,4 +1,4 @@
-use std::{future::Future, mem::MaybeUninit, pin::Pin, ptr};
+use core::{future::Future, mem::MaybeUninit, pin::Pin, ptr};
 
 use crate::{
     core::{advance, async_advance, Airlock as _, Next},
@@ -34,7 +34,6 @@ impl<Y, R, F: Future> Shelf<Y, R, F> {
 }
 
 impl<Y, R, F: Future> Default for Shelf<Y, R, F> {
-    #[must_use]
     fn default() -> Self {
         Self::new()
     }
